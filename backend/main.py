@@ -311,10 +311,16 @@ async def text_to_speech(body: TTSRequest):
             await asyncio.sleep(2)
 
     if response.status_code not in (200, 201):
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=f"Aisha TTS error: {response.text}",
-        )
+        try:
+            err = response.json()
+            err_key = err.get("error_key", "")
+        except Exception:
+            err_key = ""
+        if err_key == "insufficient_balance":
+            raise HTTPException(503, "Audio xizmat vaqtincha to'xtatilgan. Iltimos keyinroq urinib ko'ring.")
+        if response.status_code == 429:
+            raise HTTPException(429, "Juda ko'p so'rov yuborildi. Biroz kutib, qayta urinib ko'ring.")
+        raise HTTPException(502, "Audio yaratib bo'lmadi. Keyinroq urinib ko'ring.")
 
     result = response.json()
     print("Aisha response:", result)

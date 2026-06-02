@@ -1210,7 +1210,12 @@ async function togglePlay() {
     console.error(err);
     resetPlayer();
     el('btn-audio').style.display = 'flex';
-    el('btn-audio-txt').textContent = '⚠ ' + (err.message || 'Xato');
+    // Texnik xabarlarni foydalanuvchiga ko'rsatmaslik
+    const raw = err.message || '';
+    const friendly = raw.startsWith('{') || raw.includes('HTTP ')
+      ? { uz:'Audio vaqtincha mavjud emas', en:'Audio unavailable', ru:'Аудио недоступно' }[lang] || 'Audio vaqtincha mavjud emas'
+      : raw;
+    el('btn-audio-txt').textContent = '⚠ ' + friendly;
   }
 }
 
