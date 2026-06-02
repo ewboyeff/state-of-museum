@@ -35,6 +35,7 @@ AISHA_BASE_URL  = "https://back.aisha.group"
 AISHA_API_KEY   = os.getenv("AISHA_API_KEY")
 ADMIN_USERNAME  = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD  = os.getenv("ADMIN_PASSWORD")
+FRONTEND_URL    = os.getenv("FRONTEND_URL", "")
 if not ADMIN_PASSWORD:
     raise RuntimeError("ADMIN_PASSWORD muhit o'zgaruvchisi .env da sozlanmagan!")
 
@@ -218,6 +219,10 @@ EXHIBITS = [
     },
 ]
 
+
+@app.get("/api/config")
+def get_config():
+    return {"frontend_url": FRONTEND_URL}
 
 @app.get("/api/exhibits")
 def get_exhibits(vitrina_id: Optional[int] = None):

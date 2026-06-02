@@ -523,6 +523,10 @@ let token = localStorage.getItem('admin_token') || '';
 let bolimlarData    = [];
 let vitrinalarData  = [];
 let eksponatlarData = [];
+let frontendUrl     = '';
+
+// Frontend URL ni backenddan olish (QR code uchun)
+fetch(`${API}/api/config`).then(r=>r.json()).then(d=>{ frontendUrl = d.frontend_url || location.origin; }).catch(()=>{ frontendUrl = location.origin; });
 
 // ── AUTH ──────────────────────────────────────────────────────
 async function doLogin() {
@@ -699,7 +703,7 @@ async function loadVitrinalar() {
     if (!vitrinalarData.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">🪟</div><h3>Vitrinalar yo'q</h3><p>Yangi vitrina qo'shing</p></div></td></tr>`; return; }
     const bMap={}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
     tbody.innerHTML = vitrinalarData.map(v=>{
-      const qrUrl=`${location.origin}/?vitrina=${v.id}`;
+      const qrUrl=`${frontendUrl || location.origin}/?vitrina=${v.id}`;
       return `<tr>
         <td><span class="badge badge-gray">#${v.id}</span></td>
         <td><span class="badge badge-blue">${esc(bMap[v.bolim_id]||'—')}</span></td>
@@ -1109,7 +1113,7 @@ function showQR(vitrinaId, vitrinaName) {
     toast("QR kutubxonasi yuklanmadi. Internet aloqasini tekshiring.", 'error');
     return;
   }
-  const url = `${location.origin}/?vitrina=${vitrinaId}`;
+  const url = `${frontendUrl || location.origin}/?vitrina=${vitrinaId}`;
   g('qr-modal-title').textContent = `QR — ${vitrinaName || 'Vitrina #'+vitrinaId}`;
   g('qr-url-text').textContent = url;
   const box = g('qr-code-box');
