@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Museum AI Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0d0a06;
+      --card:         #1a1510;
+      --card2:        #221c12;
+      --gold:         #c9a84c;
+      --gold-light:   #d9ba6a;
+      --gold-dim:     rgba(201,168,76,0.12);
+      --gold-border:  rgba(201,168,76,0.28);
+      --text:         #f5efe0;
+      --muted:        #9a8a65;
+      --muted2:       #6a5a3a;
+      --radius:       16px;
+      --radius-sm:    10px;
+    }
+
+    html, body {
+      height: 100%;
+      background: #060402;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── APP SHELL ─────────────────────────────────────── */
+    #app {
+      width: 100%;
+      max-width: 430px;
+      height: 100vh;
+      height: 100dvh;
+      margin: 0 auto;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── SCREENS ───────────────────────────────────────── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(48px);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen { scrollbar-width: none; }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+    .screen.exit-left {
+      opacity: 0;
+      transform: translateX(-48px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 1 — WELCOME / QR
+    ══════════════════════════════════════════════════ */
+    #screen1 {
+      justify-content: space-between;
+      padding: 64px 28px 48px;
+      background:
+        radial-gradient(ellipse 100% 50% at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 70%),
+        linear-gradient(180deg, #1a1208 0%, #0d0a06 60%);
+    }
+
+    .s1-header { text-align: center; }
+    .s1-logo   { font-size: 52px; display: block; margin-bottom: 14px; filter: drop-shadow(0 0 20px rgba(201,168,76,0.45)); }
+    .s1-brand  { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold); }
+    .s1-badge  { font-size: 10px; letter-spacing: 0.25em; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+
+    .s1-body   { text-align: center; }
+    .s1-desc {
+      font-size: 15px;
+      line-height: 1.65;
+      color: #c0a870;
+      margin-bottom: 36px;
+      padding: 0 8px;
+    }
+
+    /* QR frame */
+    .qr-wrap {
+      width: 172px; height: 172px;
+      margin: 0 auto 8px;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qr-corner {
+      position: absolute;
+      width: 22px; height: 22px;
+      border: 3px solid var(--gold);
+    }
+    .qr-corner.tl { top:0; left:0;  border-right:0; border-bottom:0; }
+    .qr-corner.tr { top:0; right:0; border-left:0;  border-bottom:0; }
+    .qr-corner.bl { bottom:0; left:0;  border-right:0; border-top:0; }
+    .qr-corner.br { bottom:0; right:0; border-left:0;  border-top:0; }
+    .qr-icon { font-size: 72px; opacity: 0.45; }
+
+    .s1-footer {}
+
+    .btn-primary {
+      width: 100%;
+      padding: 17px;
+      background: var(--gold);
+      color: #0d0a06;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-primary:active { transform: scale(0.98); background: var(--gold-light); }
+
+    .btn-ghost {
+      width: 100%;
+      padding: 15px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(201,168,76,0.18);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:active { border-color: var(--gold-border); color: var(--text); }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 2 — LANGUAGE
+    ══════════════════════════════════════════════════ */
+    #screen2 {
+      justify-content: flex-end;
+      padding: 0;
+      background: #0d0a06;
+      overflow: hidden;
+    }
+
+    .museum-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 65%;
+      z-index: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #1a1208 0%, #0d0a06 100%);
+    }
+    .museum-bg img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center 30%;
+      display: block;
+      filter: brightness(0.55) saturate(0.85);
+    }
+    .museum-bg::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 65%;
+      background: linear-gradient(to bottom, transparent 0%, rgba(13,10,6,0.6) 50%, #0d0a06 100%);
+      z-index: 1;
+    }
+
+    .s2-float-logo {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 52px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .s2-logo-icon {
+      font-size: 44px;
+      filter: drop-shadow(0 0 22px rgba(201,168,76,0.7)) drop-shadow(0 0 8px rgba(201,168,76,0.4));
+      margin-bottom: 8px;
+    }
+    .s2-logo-txt {
+      font-family: 'Playfair Display', serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.14em; color: var(--gold);
+      text-align: center;
+    }
+
+    .lang-panel {
+      position: relative; z-index: 3;
+      background: linear-gradient(180deg, transparent 0%, #0d0a06 8%);
+      padding: 28px 22px 48px;
+    }
+
+    .s2-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 700;
+      text-align: center; margin-bottom: 6px;
+    }
+    .s2-sub {
+      font-size: 12px; color: var(--muted);
+      text-align: center; letter-spacing: 0.06em;
+      margin-bottom: 24px;
+    }
+
+    /* Language sticker cards */
+    .lang-cards { display: flex; flex-direction: column; gap: 12px; }
+
+    .lang-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      position: relative; overflow: hidden;
+    }
+    .lang-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(201,168,76,0.07), transparent 60%);
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .lang-card:hover::before { opacity: 1; }
+    .lang-card:active { transform: scale(0.98); background: var(--card2); }
+
+    /* iPhone sticker flag */
+    .flag-sticker {
+      width: 58px;
+      height: 42px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+      box-shadow:
+        0 6px 16px rgba(0,0,0,0.55),
+        0 2px 6px rgba(0,0,0,0.35),
+        0 0 0 1.5px rgba(255,255,255,0.08);
+    }
+
+    .lc-info   { flex: 1; }
+    .lc-name   { font-size: 17px; font-weight: 600; margin-bottom: 2px; }
+    .lc-native { font-size: 12px; color: var(--muted); }
+    .lc-arrow  { font-size: 22px; color: var(--muted2); font-weight: 300; }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 3 — EXHIBIT LIST
+    ══════════════════════════════════════════════════ */
+    #screen3 { background: var(--bg); }
+
+    .list-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 52px 16px 0;
+    }
+
+    .list-heading { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; }
+    .list-sub     { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    .lang-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 24px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .lang-pill:active { background: var(--card2); }
+
+    .ex-list { padding: 20px 16px 40px; display: flex; flex-direction: column; gap: 10px; }
+
+    .ex-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 14px 14px 14px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .ex-row:active { background: var(--card2); transform: scale(0.98); }
+
+    .ex-thumb {
+      width: 66px; height: 66px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+    }
+    .t1 { background: linear-gradient(135deg,#2c2018,#3d2c1a); }
+    .t2 { background: linear-gradient(135deg,#1a2030,#152040); }
+    .t3 { background: linear-gradient(135deg,#201a10,#342818); }
+    .t4 { background: linear-gradient(135deg,#1c2010,#2a3015); }
+    .t5 { background: linear-gradient(135deg,#20101a,#301428); }
+
+    .ex-info  { flex: 1; min-width: 0; }
+    .ex-name  { font-size: 15px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ex-date  { font-size: 12px; color: var(--muted); }
+    .ex-chev  { color: var(--muted2); font-size: 20px; flex-shrink: 0; font-weight: 300; }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 4 — EXHIBIT DETAIL
+    ══════════════════════════════════════════════════ */
+    #screen4 { background: var(--bg); }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      height: 290px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+    }
+    .hero-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(13,10,6,0.25) 0%, transparent 35%, rgba(13,10,6,0.98) 100%);
+    }
+    .h1 .hero-bg { background: linear-gradient(145deg,#2c2018 0%,#4a3420 100%); }
+    .h2 .hero-bg { background: linear-gradient(145deg,#18202e 0%,#152040 100%); }
+    .h3 .hero-bg { background: linear-gradient(145deg,#221a10 0%,#3a2a18 100%); }
+    .h4 .hero-bg { background: linear-gradient(145deg,#1c2214 0%,#2a3418 100%); }
+    .h5 .hero-bg { background: linear-gradient(145deg,#22101c 0%,#381428 100%); }
+
+    .hero-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 52px 16px 0;
+      z-index: 2;
+    }
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(13,10,6,0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 20px; color: var(--text);
+      transition: background 0.15s, transform 0.15s;
+    }
+    .icon-btn.liked { color: #ff4d6d; border-color: rgba(255,77,109,0.4); }
+    .icon-btn:active { transform: scale(0.88); }
+    .icon-btn:active { background: rgba(13,10,6,0.8); }
+
+    .hero-emoji {
+      font-size: 108px;
+      position: relative; z-index: 1;
+      filter: drop-shadow(0 10px 28px rgba(0,0,0,0.7));
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    /* Detail body */
+    .d-body { padding: 22px 20px 52px; }
+
+    .d-badges { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+
+    .chip {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      padding: 4px 10px; border-radius: 20px;
+      background: var(--gold-dim); color: var(--gold);
+      border: 1px solid var(--gold-border);
+    }
+
+
+    .d-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 27px; font-weight: 700; line-height: 1.2;
+      margin-bottom: 22px;
+    }
+
+    /* ── Loading ── */
+    .state-loading {
+      display: none;
+      align-items: center; gap: 12px;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .state-loading.on { display: flex; }
+    .spin {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(201,168,76,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-txt { font-size: 13px; color: var(--muted); }
+
+    /* ── Audio play button ── */
+    .btn-audio {
+      width: 100%;
+      padding: 18px;
+      background: var(--gold);
+      color: #0d0a06;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px; font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      letter-spacing: 0.02em;
+      margin-bottom: 24px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-audio:active  { transform: scale(0.98); background: var(--gold-light); }
+    .btn-audio:disabled { opacity: 0.55; cursor: default; }
+    .btn-audio .bicon  { font-size: 20px; }
+
+    /* ── Waveform player card ── */
+    .player-card {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius);
+      padding: 20px 20px 18px;
+      margin-bottom: 24px;
+    }
+    .player-card.on { display: block; }
+
+    .player-lbl {
+      text-align: center;
+      font-size: 12px; letter-spacing: 0.1em;
+      color: var(--muted); margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    /* waveform bars */
+    .waveform {
+      display: flex; align-items: center; gap: 3px;
+      height: 44px; margin-bottom: 14px;
+    }
+    .wvbar {
+      flex: 1;
+      border-radius: 2px;
+      background: var(--muted2);
+      min-width: 3px;
+      transition: background 0.3s;
+    }
+    .wvbar.lit { background: var(--gold); }
+    .wvbar.anim {
+      animation: wv 1.1s ease-in-out infinite;
+    }
+    @keyframes wv {
+      0%,100% { transform: scaleY(0.35); }
+      50%      { transform: scaleY(1); }
+    }
+
+    .time-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .t-val { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .prog-track { flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    .prog-fill  { height: 100%; background: var(--gold); border-radius: 2px; width: 0%; transition: width 0.25s linear; }
+
+    .player-ctrl { display: flex; justify-content: center; }
+    .stop-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%; background: var(--gold); border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #0d0a06;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .stop-btn:active { transform: scale(0.93); background: var(--gold-light); }
+
+    /* Description */
+    .d-desc  { font-size: 14px; line-height: 1.78; color: #b0a078; margin-bottom: 24px; }
+
+    /* Karaoke effekti */
+    .kword { transition: color 0.35s ease, text-shadow 0.35s ease; color: var(--muted2); display: inline; }
+    .kword.klit { color: #9a8a65; }
+    .kword.kcur {
+      color: #ffffff;
+      text-shadow: 0 0 8px rgba(255,255,255,0.95), 0 0 20px rgba(201,168,76,0.7), 0 0 40px rgba(201,168,76,0.3);
+    }
+
+
+    /* ── FAB scan button ────────────────────────────── */
+    .fab-scan {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 26px;
+      background: var(--gold);
+      color: #0d0a06;
+      border: none;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(201,168,76,0.4), 0 2px 8px rgba(0,0,0,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fab-scan.visible { display: flex; }
+    .fab-scan:active  { transform: translateX(-50%) scale(0.96); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
+    .fab-scan .fab-icon { font-size: 18px; }
+
+    /* ── Scanner overlay ───────────────────────────── */
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .scanner-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .scanner-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 52px 16px 16px;
+      position: absolute;
+      top: 0; z-index: 2;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    }
+    .scanner-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    #scanner-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Viewfinder frame */
+    .scanner-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -58%);
+      width: 230px;
+      height: 230px;
+      z-index: 3;
+    }
+    .sf-corner {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--gold);
+    }
+    .sf-corner.tl { top:0;    left:0;  border-right:0; border-bottom:0; border-radius: 4px 0 0 0; }
+    .sf-corner.tr { top:0;    right:0; border-left:0;  border-bottom:0; border-radius: 0 4px 0 0; }
+    .sf-corner.bl { bottom:0; left:0;  border-right:0; border-top:0;    border-radius: 0 0 0 4px; }
+    .sf-corner.br { bottom:0; right:0; border-left:0;  border-top:0;    border-radius: 0 0 4px 0; }
+
+    /* Scan line animation */
+    .sf-line {
+      position: absolute;
+      left: 8px; right: 8px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      animation: scanline 2s ease-in-out infinite;
+      top: 0;
+    }
+    @keyframes scanline {
+      0%   { top: 8px;   opacity: 1; }
+      90%  { top: 214px; opacity: 1; }
+      100% { top: 214px; opacity: 0; }
+    }
+
+    .scanner-hint {
+      position: absolute;
+      bottom: 110px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      z-index: 3;
+      letter-spacing: 0.03em;
+    }
+    .scanner-hint.detected {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    /* ── Camera permission modal ─────────────────── */
+    .cam-modal-bg {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .cam-modal-bg.open { opacity: 1; pointer-events: all; }
+
+    .cam-modal {
+      width: 100%;
+      background: #1c1510;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 44px;
+      border-top: 1px solid rgba(201,168,76,0.2);
+      transform: translateY(40px);
+      transition: transform 0.3s ease;
+    }
+    .cam-modal-bg.open .cam-modal { transform: translateY(0); }
+
+    .cam-modal-icon {
+      font-size: 52px;
+      text-align: center;
+      display: block;
+      margin-bottom: 16px;
+    }
+    .cam-modal-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px; font-weight: 700;
+      text-align: center; margin-bottom: 10px;
+    }
+    .cam-modal-desc {
+      font-size: 14px; color: var(--muted);
+      text-align: center; line-height: 1.65;
+      margin-bottom: 28px;
+    }
+    .cam-modal-desc b { color: var(--text); }
+    .cam-modal-btns { display: flex; flex-direction: column; gap: 10px; }
+    .cam-allow {
+      padding: 16px; background: var(--gold); color: #0d0a06;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .cam-allow:active { background: var(--gold-light); }
+    .cam-deny {
+      padding: 14px; background: transparent; color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius); font-size: 14px;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+    }
+
+    /* HTTPS warning */
+    .cam-warn {
+      background: rgba(201,168,76,0.1);
+      border: 1px solid var(--gold-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px; color: var(--gold);
+      line-height: 1.6; margin-bottom: 16px;
+      display: none;
+    }
+    .cam-warn.show { display: block; }
+
+    /* Manual exhibit number input */
+    .manual-input-wrap {
+      margin-top: 6px;
+      display: none;
+    }
+    .manual-input-wrap.show { display: block; }
+    .manual-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 14px 0 12px;
+      font-size: 11px; color: var(--muted2); letter-spacing: 0.05em;
+    }
+    .manual-divider::before, .manual-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08);
+    }
+    .manual-row { display: flex; gap: 8px; }
+    .manual-inp {
+      flex: 1; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: var(--radius); color: var(--text);
+      padding: 13px 14px; font-size: 18px; font-weight: 700;
+      font-family: 'Inter', sans-serif; outline: none;
+      text-align: center; letter-spacing: 0.08em;
+    }
+    .manual-inp:focus { border-color: var(--gold); }
+    .manual-go {
+      padding: 13px 18px; background: var(--gold); color: #0d0a06;
+      border: none; border-radius: var(--radius); font-size: 18px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .manual-go:active { background: var(--gold-light); }
+
+    /* ── Desktop frame ────────────────────────────── */
+    @media (min-width: 431px) {
+      body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+      #app { border-radius: 44px; box-shadow: 0 48px 96px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06); }
+      .fab-scan { position: absolute; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 2 — LANGUAGE
+  ══════════════════════════════════════════ -->
+  <section id="screen2" class="screen active">
+
+    <!-- Museum building photo -->
+    <div class="museum-bg" aria-hidden="true">
+      <img src="/static/muzey.jpg" alt="" />
+    </div>
+
+    <!-- Floating museum logo -->
+    <div class="s2-float-logo">
+      <span class="s2-logo-icon">🏛️</span>
+      <div class="s2-logo-txt">STATE HISTORY MUSEUM OF UZBEKISTAN</div>
+    </div>
+
+    <!-- Language selection panel -->
+    <div class="lang-panel">
+      <h1 class="s2-heading">Choose Language</h1>
+      <p class="s2-sub">Tilni tanlang &nbsp;·&nbsp; Выберите язык</p>
+
+      <div class="lang-cards">
+        <div class="lang-card" onclick="setLang('en')">
+          <img class="flag-sticker" src="https://flagcdn.com/w80/gb.png" alt="English flag" />
+          <div class="lc-info">
+            <div class="lc-name">English</div>
+            <div class="lc-native">English language</div>
+          </div>
+          <span class="lc-arrow">›</span>
+        </div>
+
+        <div class="lang-card" onclick="setLang('uz')">
+          <img class="flag-sticker" src="https://flagcdn.com/w80/uz.png" alt="O'zbek bayrog'i" />
+          <div class="lc-info">
+            <div class="lc-name">O'zbek</div>
+            <div class="lc-native">O'zbek tili</div>
+          </div>
+          <span class="lc-arrow">›</span>
+        </div>
+
+        <div class="lang-card" onclick="setLang('ru')">
+          <img class="flag-sticker" src="https://flagcdn.com/w80/ru.png" alt="Русский флаг" />
+          <div class="lc-info">
+            <div class="lc-name">Русский</div>
+            <div class="lc-native">Русский язык</div>
+          </div>
+          <span class="lc-arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 3 — EXHIBIT LIST
+  ══════════════════════════════════════════ -->
+  <section id="screen3" class="screen">
+    <div class="list-nav">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="icon-btn" onclick="go('screen2')" style="flex-shrink:0">‹</div>
+        <div>
+          <div class="list-heading" id="s3-ttl">Exhibits</div>
+          <div class="list-sub"    id="s3-sub">Eksponatlar</div>
+        </div>
+      </div>
+      <div class="lang-pill" onclick="go('screen2')">
+        <span id="pill-flag">🇬🇧</span>
+        <span id="pill-name">English</span>
+      </div>
+    </div>
+    <div class="ex-list" id="ex-list"></div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SCREEN 4 — EXHIBIT DETAIL
+  ══════════════════════════════════════════ -->
+  <section id="screen4" class="screen">
+    <!-- Hero -->
+    <div class="hero" id="d-hero">
+      <div class="hero-bg"></div>
+      <div class="hero-bar">
+        <div class="icon-btn" onclick="go('screen3')">‹</div>
+        <div class="icon-btn" id="fav-btn" onclick="toggleFav()">♡</div>
+      </div>
+      <span class="hero-emoji" id="d-emoji">🪨</span>
+    </div>
+
+    <!-- Body -->
+    <div class="d-body">
+      <div class="d-badges">
+        <span class="chip" id="d-era">TOSH DAVRI</span>
+      </div>
+      <h2 class="d-name" id="d-name">Tosh bolta</h2>
+
+      <!-- Loading -->
+      <div class="state-loading" id="state-loading">
+        <div class="spin"></div>
+        <span class="loading-txt" id="loading-txt">Yuklanmoqda...</span>
+      </div>
+
+      <!-- Waveform player -->
+      <div class="player-card" id="player-card">
+        <div class="player-lbl" id="player-lbl">Audio ma'lumot</div>
+        <div class="waveform" id="waveform"></div>
+        <div class="time-row">
+          <span class="t-val" id="t-cur">0:00</span>
+          <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+          <span class="t-val" id="t-dur">0:00</span>
+        </div>
+        <div class="player-ctrl">
+          <button class="stop-btn" id="pause-btn" onclick="togglePause()">⏸</button>
+        </div>
+      </div>
+
+      <!-- Audio button -->
+      <button class="btn-audio" id="btn-audio" onclick="togglePlay()">
+        <span class="bicon">🔊</span>
+        <span id="btn-audio-txt">Audio eshitish</span>
+      </button>
+
+      <p class="d-desc" id="d-desc"></p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       CAMERA PERMISSION MODAL
+  ══════════════════════════════════════════ -->
+  <div id="cam-modal-bg" class="cam-modal-bg">
+    <div class="cam-modal">
+      <span class="cam-modal-icon">📷</span>
+      <div class="cam-modal-title" id="cam-title">Kameraga ruxsat</div>
+      <div class="cam-warn" id="cam-warn">
+        ⚠ Telefon brauzeri kamerani faqat <b>https://</b> saytlarda ishlatadi.
+        Iltimos, tarmoq administratoriga murojaat qiling yoki QR raqamini qo'lda kiriting.
+      </div>
+      <p class="cam-modal-desc" id="cam-desc">
+        QR kodni skanerlash uchun <b>kameraga ruxsat</b> berishingiz kerak.
+        Ruxsat faqat skanerlash uchun ishlatiladi.
+      </p>
+      <div class="cam-modal-btns">
+        <button class="cam-allow" id="cam-allow-btn" onclick="grantCamera()">
+          📷 Ruxsat berish
+        </button>
+        <button class="cam-deny" onclick="closeCamModal()">Bekor qilish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCANNER OVERLAY
+  ══════════════════════════════════════════ -->
+  <div id="scanner-overlay" class="scanner-overlay">
+    <div class="scanner-bar">
+      <div class="icon-btn" onclick="closeScanner()" style="background:rgba(0,0,0,0.5)">✕</div>
+      <span class="scanner-title">QR Skaner</span>
+      <div style="width:40px"></div>
+    </div>
+    <video id="scanner-video" playsinline muted></video>
+    <canvas id="scanner-canvas" style="display:none"></canvas>
+    <div class="scanner-frame">
+      <div class="sf-corner tl"></div>
+      <div class="sf-corner tr"></div>
+      <div class="sf-corner bl"></div>
+      <div class="sf-corner br"></div>
+      <div class="sf-line"></div>
+    </div>
+    <p class="scanner-hint" id="scanner-hint">QR kodni ramka ichiga yo'naltiring</p>
+  </div>
+
+  <!-- Floating scan button (visible on screen4) -->
+  <button class="fab-scan" id="fab-scan" onclick="openScanner()">
+    <span class="fab-icon">📷</span>
+    <span id="fab-txt">Keyingisini skaner qil</span>
+  </button>
+
+</div>
+<script>
+/* ─────────────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────────────── */
+const API_BASE = '';
+let lang    = 'en';
+let exhibits = [];
+let exhibit  = null;
+
+let aud      = null;
+let progTmr  = null;
+let timeTmr  = null;
+let playing  = false;
+let loading  = false;
+
+const urlExhibitId  = parseInt(new URLSearchParams(location.search).get('exhibit'))  || null;
+const urlVitrinaId  = parseInt(new URLSearchParams(location.search).get('vitrina'))  || null;
+let vitrinaInfo = null; // {id, nomi:{uz,ru,en}}
+
+/* ─────────────────────────────────────────────────────
+   CACHE
+───────────────────────────────────────────────────── */
+const cKey = (id, l) => `maud_${id}_${l}`;
+const cGet = (id, l) => { try { return localStorage.getItem(cKey(id,l)); } catch { return null; } };
+const cSet = (id, l, v) => { try { localStorage.setItem(cKey(id,l), v); } catch {} };
+const cDel = (id, l) => { try { localStorage.removeItem(cKey(id,l)); } catch {} };
+
+/* ─────────────────────────────────────────────────────
+   UI STRINGS
+───────────────────────────────────────────────────── */
+const UI = {
+  uz: { ttl:'Eksponatlar', sub:'Exhibits', audioBtn:'Audio eshitish', loading:'Yuklanmoqda...', playerLbl:"Audio ma'lumot", flag:'🇺🇿', pname:"O'zbek" },
+  en: { ttl:'Exhibits', sub:'Eksponatlar', audioBtn:'Listen audio', loading:'Loading...', playerLbl:'Audio guide', flag:'🇬🇧', pname:'English' },
+  ru: { ttl:'Экспонаты', sub:'Exhibits', audioBtn:'Прослушать', loading:'Загрузка...', playerLbl:'Аудио информация', flag:'🇷🇺', pname:'Русский' },
+};
+
+/* ─────────────────────────────────────────────────────
+   NAVIGATION
+───────────────────────────────────────────────────── */
+function go(targetId, back = false) {
+  stopAudio();
+  const cur = document.querySelector('.screen.active');
+  if (cur) {
+    cur.classList.add('exit-left');
+    setTimeout(() => cur.classList.remove('active', 'exit-left'), 250);
+  }
+  const t = document.getElementById(targetId);
+  t.classList.add('active');
+  t.scrollTop = 0;
+  updateFab(targetId);
+}
+
+/* ─────────────────────────────────────────────────────
+   LANGUAGE
+───────────────────────────────────────────────────── */
+function setLang(l) {
+  lang = l;
+  const u = UI[l];
+  // vitrina nomi bo'lsa sarlavhada ko'rsat
+  const ttl = vitrinaInfo ? (vitrinaInfo.nomi?.[l] || vitrinaInfo.nomi?.uz || u.ttl) : u.ttl;
+  document.getElementById('s3-ttl').textContent    = ttl;
+  document.getElementById('s3-sub').textContent    = vitrinaInfo ? u.ttl : u.sub;
+  document.getElementById('pill-flag').textContent = u.flag;
+  document.getElementById('pill-name').textContent = u.pname;
+  el('fab-txt').textContent = FAB_LABELS[l] || FAB_LABELS.en;
+  renderList();
+
+  // agar URL da ?exhibit=N bo'lsa — ro'yxat o'rniga to'g'ridan-to'g'ri shu eksponatga o't
+  if (urlExhibitId) {
+    const idx = exhibits.findIndex(e => e.id === urlExhibitId);
+    if (idx !== -1) { openExhibit(exhibits[idx], idx); return; }
+  }
+  go('screen3');
+}
+
+/* ─────────────────────────────────────────────────────
+   EXHIBIT LIST
+───────────────────────────────────────────────────── */
+const THUMBS = ['t1','t2','t3','t4','t5'];
+const HEROES = ['h1','h2','h3','h4','h5'];
+
+const OFFLINE_KEY = id => `offline_exhibits_${id || 'all'}`;
+
+async function loadExhibits() {
+  const cacheKey = OFFLINE_KEY(urlVitrinaId);
+  try {
+    const url = urlVitrinaId
+      ? `${API_BASE}/api/exhibits?vitrina_id=${urlVitrinaId}`
+      : `${API_BASE}/api/exhibits`;
+    const r = await fetch(url);
+    exhibits = await r.json();
+    // Offline uchun saqlash
+    try { localStorage.setItem(cacheKey, JSON.stringify(exhibits)); } catch {}
+  } catch {
+    // Internet yo'q — oldingi ma'lumotdan foydalanish
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      exhibits = cached ? JSON.parse(cached) : FALLBACK;
+    } catch { exhibits = FALLBACK; }
+  }
+
+  // vitrina nomi olish (sarlavha uchun)
+  if (urlVitrinaId && !vitrinaInfo) {
+    try {
+      const rv = await fetch(`${API_BASE}/api/vitrina/${urlVitrinaId}`);
+      if (rv.ok) vitrinaInfo = await rv.json();
+    } catch {
+      // Offline: vitrina nomini cached exhibits dan olish
+      try {
+        const v = JSON.parse(localStorage.getItem(`offline_vitrina_${urlVitrinaId}`) || 'null');
+        if (v) vitrinaInfo = v;
+      } catch {}
+    }
+  }
+  // vitrina ma'lumotini ham cache ga olish
+  if (vitrinaInfo) {
+    try { localStorage.setItem(`offline_vitrina_${urlVitrinaId}`, JSON.stringify(vitrinaInfo)); } catch {}
+  }
+
+  renderList();
+}
+
+// XSS himoya — foydalanuvchi ma'lumotlari innerHTML ga kirishidan oldin tozalanadi
+const escHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function renderList() {
+  const u = UI[lang];
+  const listEl = document.getElementById('ex-list');
+  listEl.innerHTML = '';
+  exhibits.forEach((ex, i) => {
+    const d = document.createElement('div');
+    d.className = 'ex-row';
+    const thumb = ex.image_url
+      ? `<div class="ex-thumb" style="overflow:hidden;padding:0"><img src="${escHtml(ex.image_url)}" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`
+      : `<div class="ex-thumb ${THUMBS[i % 5]}">${ex.emoji || '🏺'}</div>`;
+    d.innerHTML = `
+      ${thumb}
+      <div class="ex-info">
+        <div class="ex-name">${escHtml(ex.name?.[lang] || ex.name?.uz || '—')}</div>
+        <div class="ex-date">${escHtml(ex.date?.[lang] || ex.date?.uz || '')}</div>
+      </div>
+      <span class="ex-chev">›</span>
+    `;
+    d.addEventListener('click', () => openExhibit(ex, i));
+    listEl.appendChild(d);
+  });
+}
+
+/* ─────────────────────────────────────────────────────
+   EXHIBIT DETAIL
+───────────────────────────────────────────────────── */
+function openExhibit(ex, idx) {
+  exhibit = ex;
+  const u = UI[lang];
+
+  // hero — image or emoji
+  const hero    = document.getElementById('d-hero');
+  const heroBg  = hero.querySelector('.hero-bg');
+  const heroEmj = document.getElementById('d-emoji');
+  if (ex.image_url) {
+    hero.className = 'hero';
+    heroBg.style.backgroundImage    = `url(${ex.image_url})`;
+    heroBg.style.backgroundSize     = 'cover';
+    heroBg.style.backgroundPosition = 'center';
+    heroEmj.style.display = 'none';
+  } else {
+    hero.className = `hero ${HEROES[idx % 5]}`;
+    heroBg.style.backgroundImage = '';
+    heroEmj.style.display = '';
+    heroEmj.textContent = ex.emoji || '🏺';
+  }
+
+  // text — fallback to UZ if current lang field is empty
+  document.getElementById('d-era').textContent         = ex.era?.[lang]  || ex.era?.uz  || '';
+  document.getElementById('d-name').textContent        = ex.name?.[lang] || ex.name?.uz || '';
+  document.getElementById('d-desc').textContent        = ex.text?.[lang] || ex.text?.uz || '';
+
+  // Ko'rishni kuzatish (fire and forget)
+  fetch(`${API_BASE}/api/track`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({exhibit_id:ex.id,action:'view'})}).catch(()=>{});
+  document.getElementById('btn-audio-txt').textContent = u.audioBtn;
+  document.getElementById('player-lbl').textContent    = u.playerLbl;
+  document.getElementById('loading-txt').textContent   = u.loading;
+
+  // yurak holati
+  updateFavBtn();
+
+  resetPlayer();
+  go('screen4');
+}
+
+/* ─────────────────────────────────────────────────────
+   FAVORITES
+───────────────────────────────────────────────────── */
+const favKey = id => `fav_${id}`;
+const isFaved = id => localStorage.getItem(favKey(id)) === '1';
+
+function updateFavBtn() {
+  const btn = el('fav-btn');
+  if (!exhibit) return;
+  if (isFaved(exhibit.id)) {
+    btn.textContent = '♥'; btn.classList.add('liked');
+  } else {
+    btn.textContent = '♡'; btn.classList.remove('liked');
+  }
+}
+
+function toggleFav() {
+  if (!exhibit) return;
+  const id = exhibit.id;
+  const btn = el('fav-btn');
+
+  if (isFaved(id)) {
+    // unlike: faqat localda o'zgaradi, server count kamaytirilmaydi (spam himoyasi)
+    localStorage.removeItem(favKey(id));
+    btn.textContent = '♡'; btn.classList.remove('liked');
+  } else {
+    localStorage.setItem(favKey(id), '1');
+    btn.textContent = '♥'; btn.classList.add('liked');
+    btn.style.transform = 'scale(1.35)';
+    setTimeout(() => btn.style.transform = '', 200);
+    fetch(`${API_BASE}/api/exhibits/${id}/like`, { method: 'POST' }).catch(() => {});
+  }
+}
+
+/* ─────────────────────────────────────────────────────
+   AUDIO PLAYER
+───────────────────────────────────────────────────── */
+function resetPlayer() {
+  playing = false; loading = false;
+  el('btn-audio').style.display  = 'flex';
+  el('btn-audio').disabled       = false;
+  el('state-loading').classList.remove('on');
+  el('player-card').classList.remove('on');
+  el('prog-fill').style.width = '0%';
+  el('t-cur').textContent = '0:00';
+  el('t-dur').textContent = '0:00';
+  el('btn-audio-txt').textContent = UI[lang].audioBtn;
+  el('pause-btn').textContent = '⏸';
+  clearKaraoke();
+}
+
+async function togglePlay() {
+  if (loading || playing) return;
+  loading = true;
+
+  el('btn-audio').style.display = 'none';
+  el('state-loading').classList.add('on');
+
+  const id = exhibit.id, l = lang;
+  // fallback to UZ if current lang text is empty (RU/EN are optional fields)
+  const transcript = exhibit.text?.[l] || exhibit.text?.uz || '';
+
+  try {
+    if (!transcript) throw new Error({ uz:"Matn mavjud emas", en:'No text available', ru:'Текст недоступен' }[l] || 'Matn yo\'q');
+
+    let url = cGet(id, l);
+
+    if (!url) {
+      const r = await fetch(`${API_BASE}/api/tts`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript, language: l, exhibit_id: exhibit.id, mood: 'Neutral', speed: 1.0 }),
+      });
+      if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.detail || `HTTP ${r.status}`); }
+      const data = await r.json();
+      url = data.audio_url;
+      if (!url) throw new Error("audio_url yo'q");
+      cSet(id, l, url);
+    }
+
+    aud = new Audio(url);
+    aud.addEventListener('ended', resetPlayer);
+    aud.addEventListener('error', () => {
+      cDel(id, l);
+      resetPlayer();
+      // Foydalanuvchiga ko'rinadigan xabar
+      el('btn-audio-txt').textContent = { uz:'⚠ Audio yuklanmadi', en:'⚠ Audio failed', ru:'⚠ Аудио недоступно' }[l] || '⚠ Audio yuklanmadi';
+    });
+
+    const p = aud.play();
+    if (p) await p;
+
+    loading = false; playing = true;
+    el('state-loading').classList.remove('on');
+    el('player-card').classList.add('on');
+    buildWaveform();
+    buildKaraoke();
+    startTimers();
+    // Tinglashni kuzatish
+    fetch(`${API_BASE}/api/track`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({exhibit_id:exhibit.id,action:'audio'})}).catch(()=>{});
+
+  } catch (err) {
+    console.error(err);
+    resetPlayer();
+    el('btn-audio').style.display = 'flex';
+    el('btn-audio-txt').textContent = '⚠ ' + (err.message || 'Xato');
+  }
+}
+
+function togglePause() {
+  if (!aud) return;
+  if (aud.paused) {
+    aud.play();
+    playing = true;
+    el('pause-btn').textContent = '⏸';
+    // waveform animatsiyasini qayta ishga tushirish
+    document.querySelectorAll('.wvbar.lit').forEach(b => {});
+  } else {
+    aud.pause();
+    playing = false;
+    el('pause-btn').textContent = '▶';
+  }
+}
+
+function stopAudio() {
+  if (aud) { aud.pause(); aud.src = ''; aud = null; }
+  if (progTmr) { clearInterval(progTmr); progTmr = null; }
+  if (timeTmr) { clearInterval(timeTmr); timeTmr = null; }
+  if (playing || loading) resetPlayer();
+}
+
+/* Waveform */
+const HEIGHTS = [22,38,58,72,48,85,62,42,78,52,68,36,92,55,40,72,46,82,30,62,76,52,34,66,44];
+
+function buildWaveform() {
+  const wf = el('waveform');
+  wf.innerHTML = '';
+  HEIGHTS.forEach((h, i) => {
+    const b = document.createElement('div');
+    b.className = 'wvbar anim';
+    b.style.height = h + '%';
+    b.style.animationDelay = (i * 0.048) + 's';
+    b.style.animationDuration = (0.9 + (i % 5) * 0.08) + 's';
+    wf.appendChild(b);
+  });
+}
+
+function startTimers() {
+  progTmr = setInterval(() => {
+    if (!aud || aud.paused) return;
+    const pct = aud.duration ? (aud.currentTime / aud.duration) * 100 : 0;
+    el('prog-fill').style.width = pct + '%';
+
+    // light up played bars
+    const bars = document.querySelectorAll('.wvbar');
+    const lit  = Math.round(pct / 100 * bars.length);
+    bars.forEach((b, i) => {
+        if (i < lit) { b.classList.add('lit');  b.classList.remove('anim'); }
+      else         { b.classList.remove('lit'); b.classList.add('anim'); }
+    });
+
+    // Karaoke yangilash
+    updateKaraoke(pct);
+  }, 200);
+
+  timeTmr = setInterval(() => {
+    if (!aud) return;
+    el('t-cur').textContent = fmt(aud.currentTime || 0);
+    if (aud.duration && !isNaN(aud.duration))
+      el('t-dur').textContent = fmt(aud.duration);
+  }, 400);
+}
+
+const fmt = s => { const m = Math.floor(s/60); return `${m}:${Math.floor(s%60).toString().padStart(2,'0')}`; };
+const el  = id => document.getElementById(id);
+
+/* ─────────────────────────────────────────────────────
+   KARAOKE EFFEKTI
+───────────────────────────────────────────────────── */
+let _karaokeWords = 0;
+
+function buildKaraoke() {
+  const text = exhibit?.text?.[lang] || exhibit?.text?.uz || '';
+  if (!text) return;
+  const words = text.split(/\s+/).filter(Boolean);
+  _karaokeWords = words.length;
+  el('d-desc').innerHTML = words.map((w, i) =>
+    `<span class="kword" data-i="${i}">${escHtml(w)}</span>`
+  ).join(' ');
+}
+
+function updateKaraoke(pct) {
+  if (!_karaokeWords) return;
+  const litCount = Math.floor(pct / 100 * _karaokeWords);
+  const spans = el('d-desc').querySelectorAll('.kword');
+  spans.forEach((s, i) => {
+    s.classList.toggle('klit', i < litCount - 1);
+    s.classList.toggle('kcur', i === litCount - 1);
+  });
+}
+
+function clearKaraoke() {
+  _karaokeWords = 0;
+  if (!exhibit) return;
+  el('d-desc').textContent = exhibit.text?.[lang] || exhibit.text?.uz || '';
+}
+
+/* ─────────────────────────────────────────────────────
+   FALLBACK DATA
+───────────────────────────────────────────────────── */
+const FALLBACK = [
+  {id:1,emoji:'🪨',era:{uz:'TOSH DAVRI',ru:'КАМЕННЫЙ ВЕК',en:'STONE AGE'},name:{uz:'Tosh bolta',ru:'Каменный топор',en:'Stone Axe'},date:{uz:'M.av. 8000–3000 yil',ru:'8000–3000 до н.э.',en:'8000–3000 BC'},text:{uz:"Bu tosh bolta O'rta Osiyo hududida yashovchi qadimgi odamlar tomonidan ishlatilgan. Kremens toshlari qo'lda ishlanib, o'tkir qirra hosil qilingan. Ovchilik va yog'och kesishda foydalanilgan.",ru:'Этот каменный топор использовался древними людьми Средней Азии. Кремниевые камни обрабатывались вручную для создания острого края. Применялся для охоты и рубки дерева.',en:'This stone axe was used by ancient people of Central Asia. Flint stones were hand-shaped to create a sharp edge. Used for hunting and wood cutting.'},facts:{uz:[['Davr','Tosh davri'],['Yosh','~10,000 yil'],['Material','Kremens'],['Topilgan','Samarqand']],ru:[['Период','Каменный век'],['Возраст','~10 000 лет'],['Материал','Кремний'],['Найден','Самарканд']],en:[['Period','Stone Age'],['Age','~10,000 yrs'],['Material','Flint'],['Found in','Samarkand']]}},
+  {id:2,emoji:'🏺',era:{uz:'BRONZA DAVRI',ru:'БРОНЗОВЫЙ ВЕК',en:'BRONZE AGE'},name:{uz:'Sopol idish',ru:'Глиняный сосуд',en:'Clay Vessel'},date:{uz:'M.av. 3000–1200 yil',ru:'3000–1200 до н.э.',en:'3000–1200 BC'},text:{uz:"Bu sopol idish bronza davrida kulolchilik san'atining rivojlanganini ko'rsatadi. Geometrik naqshlar bilan bezatilgan. Asosan don va suv saqlash uchun ishlatilgan.",ru:'Этот сосуд свидетельствует о развитии гончарства в бронзовом веке. Украшен геометрическими узорами. Использовался для хранения зерна и воды.',en:'This vessel demonstrates pottery art development in the Bronze Age. Decorated with geometric patterns. Used for storing grain and water.'},facts:{uz:[['Davr','Bronza davri'],['Yosh','~4,500 yil'],['Material','Sopol'],['Topilgan','Buxoro']],ru:[['Период','Бронзовый век'],['Возраст','~4 500 лет'],['Материал','Глина'],['Найден','Бухара']],en:[['Period','Bronze Age'],['Age','~4,500 yrs'],['Material','Clay'],['Found in','Bukhara']]}},
+  {id:3,emoji:'⚔️',era:{uz:'TEMIR DAVRI',ru:'ЖЕЛЕЗНЫЙ ВЕК',en:'IRON AGE'},name:{uz:'Temir qilich',ru:'Железный меч',en:'Iron Sword'},date:{uz:'M.av. 1200–300 yil',ru:'1200–300 до н.э.',en:'1200–300 BC'},text:{uz:"Bu temir qilich O'rta Osiyodagi dastlabki metallurgiya rivojlanishini ifodalaydi. Nozik o'ymakorlik bilan bezatilgan. Yuqori toifali jangchilar uchun yaratilgan.",ru:'Меч отражает раннее развитие металлургии в Средней Азии. Украшен тонкой резьбой. Изготовлен для воинов высшего ранга.',en:'This sword reflects early metallurgy development in Central Asia. Decorated with fine carvings. Crafted for high-ranking warriors.'},facts:{uz:[['Davr','Temir davri'],['Yosh','~2,800 yil'],['Material','Temir'],['Topilgan',"Farg'ona"]],ru:[['Период','Железный век'],['Возраст','~2 800 лет'],['Материал','Железо'],['Найден','Фергана']],en:[['Period','Iron Age'],['Age','~2,800 yrs'],['Material','Iron'],['Found in','Fergana']]}},
+  {id:4,emoji:'🪙',era:{uz:'YUNON-BAQTRIYA',ru:'ГРЕКО-БАКТРИЯ',en:'GRECO-BACTRIAN'},name:{uz:'Oltin tanga',ru:'Золотая монета',en:'Gold Coin'},date:{uz:'M.av. 250–125 yil',ru:'250–125 до н.э.',en:'250–125 BC'},text:{uz:"Bu oltin tanga Yunon-Baqtriya shohligi davrida zarb etilgan. Tangada yunoncha yozuv va shoh tasviri tushirilgan. Ipak yo'lida muhim to'lov vositasi bo'lgan.",ru:'Монета отчеканена в период Греко-Бактрийского царства. На ней изображены греческая надпись и портрет царя. Была важным средством оплаты на Шёлковом пути.',en:"This coin was minted during the Greco-Bactrian Kingdom. Features a Greek inscription and king's portrait. Was an important payment on the Silk Road."},facts:{uz:[['Davr','M.av. III asr'],['Yosh','~2,200 yil'],['Material','Oltin'],['Topilgan','Termiz']],ru:[['Период','III в. до н.э.'],['Возраст','~2 200 лет'],['Материал','Золото'],['Найден','Термез']],en:[['Period','3rd c. BC'],['Age','~2,200 yrs'],['Material','Gold'],['Found in','Termez']]}},
+  {id:5,emoji:'📜',era:{uz:"O'RTA ASRLAR",ru:'СРЕДНИЕ ВЕКА',en:'MIDDLE AGES'},name:{uz:"Qo'lyozma",ru:'Рукопись',en:'Manuscript'},date:{uz:'IX–XII asr',ru:'IX–XII век',en:'9th–12th century'},text:{uz:"Bu qo'lyozma O'rta Osiyo Islom oltin asrida yaratilgan. Al-Xorazmiy va Ibn Sino kabi buyuk olimlar shu davr vakillari. Tibbiyot, matematika va astronomiya bo'yicha bilimlarni jamlaydi.",ru:'Рукопись создана в золотой век ислама Средней Азии. Аль-Хорезми и Ибн Сина — учёные этой эпохи. Содержит знания по медицине, математике и астрономии.',en:'This manuscript was created during the Islamic Golden Age in Central Asia. Al-Khwarizmi and Ibn Sina were scholars of this era. Compiles knowledge in medicine, mathematics, and astronomy.'},facts:{uz:[['Davr','Islom oltin asri'],['Yosh','~900 yil'],['Material','Pergament'],['Topilgan','Xiva']],ru:[['Период','Золотой век ислама'],['Возраст','~900 лет'],['Материал','Пергамент'],['Найден','Хива']],en:[['Period','Islamic Golden Age'],['Age','~900 yrs'],['Material','Parchment'],['Found in','Khiva']]}},
+];
+
+/* ─────────────────────────────────────────────────────
+   QR SCANNER
+───────────────────────────────────────────────────── */
+const FAB_LABELS = {
+  uz: 'QR Skaner',
+  en: 'Scan QR',
+  ru: 'Сканировать QR',
+};
+
+let scanStream   = null;
+let scanAnimId   = null;
+let scanActive   = false;
+
+const CAM_STRINGS = {
+  uz: { title: 'Kameraga ruxsat', desc: 'QR kodni skanerlash uchun <b>kameraga ruxsat</b> berishingiz kerak. Ruxsat faqat skanerlash uchun ishlatiladi.', allow: '📷 Ruxsat berish', hint: "QR kodni ramka ichiga yo'naltiring" },
+  en: { title: 'Camera Access', desc: 'To scan the QR code, please <b>allow camera access</b>. It is only used for scanning.', allow: '📷 Allow Camera', hint: 'Point camera at the QR code' },
+  ru: { title: 'Доступ к камере', desc: 'Для сканирования QR-кода необходимо <b>разрешить доступ к камере</b>. Используется только для сканирования.', allow: '📷 Разрешить', hint: 'Наведите камеру на QR-код' },
+};
+
+function openScanner() {
+  const s = CAM_STRINGS[lang] || CAM_STRINGS.uz;
+
+  // update modal text for current language
+  el('cam-title').textContent    = s.title;
+  el('cam-desc').innerHTML       = s.desc;
+  el('cam-allow-btn').textContent = s.allow;
+
+  // show HTTPS warning if on insecure context (non-localhost http)
+  const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  el('cam-warn').classList.toggle('show', !isSecure);
+
+  el('cam-modal-bg').classList.add('open');
+}
+
+function closeCamModal() {
+  el('cam-modal-bg').classList.remove('open');
+}
+
+async function grantCamera() {
+  closeCamModal();
+
+  // check secure context
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert({ uz:"Brauzeringiz kamerani qo'llab-quvvatlamaydi yoki HTTPS talab qilinadi.", en:"Your browser does not support camera or HTTPS is required.", ru:"Браузер не поддерживает камеру или требуется HTTPS." }[lang]);
+    return;
+  }
+
+  const overlay = el('scanner-overlay');
+  overlay.classList.add('open');
+  scanActive = true;
+  el('scanner-hint').textContent = (CAM_STRINGS[lang] || CAM_STRINGS.uz).hint;
+  el('scanner-hint').classList.remove('detected');
+  startCamera();
+}
+
+function closeScanner() {
+  scanActive = false;
+  el('scanner-overlay').classList.remove('open');
+  stopCamera();
+}
+
+async function startCamera() {
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = el('scanner-video');
+    video.srcObject = scanStream;
+    video.play();
+    video.addEventListener('loadedmetadata', () => scanFrame(), { once: true });
+  } catch (err) {
+    console.error('Camera error:', err);
+    const msg = err.name === 'NotAllowedError'
+      ? { uz:'Kamera ruxsati rad etildi', en:'Camera permission denied', ru:'Доступ к камере запрещён' }[lang]
+      : err.name === 'NotFoundError'
+      ? { uz:'Kamera topilmadi', en:'No camera found', ru:'Камера не найдена' }[lang]
+      : { uz:'Kamera ishlamadi', en:'Camera error', ru:'Ошибка камеры' }[lang];
+    el('scanner-hint').textContent = '⚠ ' + msg;
+    // Ruxsat rad etilsa — 2 soniyadan keyin skaner yopiladi
+    if (err.name === 'NotAllowedError' || err.name === 'NotFoundError') {
+      setTimeout(() => closeScanner(), 2000);
+    }
+  }
+}
+
+function stopCamera() {
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+  if (scanAnimId) { cancelAnimationFrame(scanAnimId); scanAnimId = null; }
+  el('scanner-video').srcObject = null;
+}
+
+function scanFrame() {
+  if (!scanActive) return;
+  const video  = el('scanner-video');
+  const canvas = el('scanner-canvas');
+
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+    scanAnimId = requestAnimationFrame(scanFrame);
+    return;
+  }
+
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+  if (code) {
+    handleQR(code.data);
+    return;
+  }
+  scanAnimId = requestAnimationFrame(scanFrame);
+}
+
+function handleQR(data) {
+  el('scanner-hint').textContent = '✓ QR topildi!';
+  el('scanner-hint').classList.add('detected');
+
+  // parse exhibit id from URL param ?exhibit=N or bare number
+  let exhibitId = null;
+  try {
+    const url    = new URL(data);
+    exhibitId    = parseInt(url.searchParams.get('exhibit'));
+  } catch {
+    const bare = parseInt(data);
+    if (!isNaN(bare)) exhibitId = bare;
+  }
+
+  setTimeout(() => {
+    closeScanner();
+    if (exhibitId) {
+      const idx = exhibits.findIndex(e => e.id === exhibitId);
+      if (idx !== -1) { openExhibit(exhibits[idx], idx); return; }
+    }
+    // unknown QR — go to exhibit list
+    go('screen3');
+  }, 600);
+}
+
+/* Show/hide FAB based on active screen */
+function updateFab(screenId) {
+  const fab = el('fab-scan');
+  if (screenId === 'screen3') {
+    fab.classList.add('visible');
+    el('fab-txt').textContent = FAB_LABELS[lang] || FAB_LABELS.en;
+  } else {
+    fab.classList.remove('visible');
+  }
+}
+
+loadExhibits();
+</script>
+</body>
+</html>

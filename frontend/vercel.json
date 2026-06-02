@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://BACKEND_URL/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://BACKEND_URL/uploads/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}

@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — O'zbekiston Davlat Tarixi Muzeyi</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3250;
+  --accent:#6c63ff; --accent2:#a78bfa; --gold:#f5c842;
+  --green:#22c55e; --red:#ef4444;
+  --text:#e2e8f0; --muted:#8892b0; --radius:12px; --shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+/* ── LOGIN ── */
+#login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; background:radial-gradient(ellipse at 60% 40%,#1e1a4a 0%,#0f1117 60%); }
+.login-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:48px 40px; width:100%; max-width:420px; box-shadow:var(--shadow); }
+.login-logo { text-align:center; margin-bottom:32px; }
+.login-logo .icon { width:64px; height:64px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:18px; display:inline-flex; align-items:center; justify-content:center; font-size:28px; margin-bottom:16px; }
+.login-logo h1 { font-size:1.4rem; } .login-logo p { font-size:0.85rem; color:var(--muted); margin-top:4px; }
+.fg { margin-bottom:20px; }
+.fg label { display:block; font-size:0.8rem; color:var(--muted); margin-bottom:8px; letter-spacing:0.05em; text-transform:uppercase; }
+.fg input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:14px 16px; font-size:1rem; outline:none; transition:border-color 0.2s; }
+.fg input:focus { border-color:var(--accent); }
+.login-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:10px; padding:12px 16px; font-size:0.875rem; margin-bottom:20px; display:none; }
+
+/* ── BUTTONS ── */
+.btn { display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:var(--radius); border:none; cursor:pointer; font-size:0.9rem; font-weight:600; transition:all 0.2s; font-family:inherit; }
+.btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; justify-content:center; }
+.btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+.btn-danger { background:var(--red); color:#fff; } .btn-danger:hover { opacity:0.85; }
+.btn-sm { padding:7px 14px; font-size:0.8rem; }
+.btn-full { width:100%; padding:16px; font-size:1rem; }
+.btn-del  { background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); }
+.btn-edit { background:rgba(108,99,255,0.1); color:var(--accent2); border:1px solid rgba(108,99,255,0.2); }
+
+/* ── APP ── */
+#app { display:none; min-height:100vh; }
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:100; }
+.sidebar-brand { padding:24px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.brand-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.brand-text h2 { font-size:0.95rem; font-weight:700; } .brand-text p { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+.sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; }
+.nav-section-label { font-size:0.65rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; padding:12px 8px 6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px; cursor:pointer; color:var(--muted); font-size:0.9rem; font-weight:500; transition:all 0.15s; margin-bottom:2px; border:none; background:none; width:100%; text-align:left; }
+.nav-item:hover { background:var(--surface2); color:var(--text); }
+.nav-item.active { background:rgba(108,99,255,0.15); color:var(--accent2); }
+.nav-icon { font-size:1rem; width:20px; text-align:center; }
+.sidebar-footer { padding:16px 12px; border-top:1px solid var(--border); }
+.user-badge { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; background:var(--surface2); margin-bottom:10px; }
+.avatar { width:32px; height:32px; background:linear-gradient(135deg,var(--gold),#e5a800); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#000; flex-shrink:0; }
+.user-info p { font-size:0.85rem; font-weight:600; } .user-info span { font-size:0.72rem; color:var(--muted); }
+.btn-logout { width:100%; background:rgba(239,68,68,0.1); color:#fca5a5; border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:10px; cursor:pointer; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s; }
+.btn-logout:hover { background:rgba(239,68,68,0.2); }
+
+/* ── MAIN ── */
+.main { margin-left:240px; min-height:100vh; }
+.topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar h1 { font-size:1.3rem; font-weight:700; } .breadcrumb { font-size:0.8rem; color:var(--muted); margin-top:2px; }
+.page-actions { display:flex; align-items:center; gap:12px; }
+.content { padding:32px; }
+.page { display:none; } .page.active { display:block; }
+
+/* ── STATS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; margin-bottom:32px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; display:flex; align-items:center; gap:16px; transition:border-color 0.2s; }
+.stat-card:hover { border-color:var(--accent); }
+.stat-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.stat-value { font-size:2rem; font-weight:800; line-height:1; } .stat-label { font-size:0.8rem; color:var(--muted); margin-top:4px; }
+
+/* ── TABLES ── */
+.table-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.table-header { padding:20px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.table-header h3 { font-size:1rem; font-weight:700; } .table-meta { font-size:0.8rem; color:var(--muted); }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { background:var(--surface2); padding:12px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; }
+td { padding:12px 16px; border-top:1px solid var(--border); font-size:0.875rem; vertical-align:middle; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+tr.drag-over td { background:rgba(108,99,255,0.12); border-top:2px solid var(--accent); }
+.badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+.badge-blue   { background:rgba(108,99,255,0.15); color:var(--accent2); }
+.badge-gray   { background:var(--surface2); color:var(--muted); }
+.badge-orange { background:rgba(249,115,22,0.15); color:#fb923c; }
+.actions { display:flex; gap:8px; }
+
+/* ── MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; width:100%; max-width:680px; max-height:92vh; overflow-y:auto; transform:scale(0.95); transition:transform 0.2s; }
+.modal-overlay.open .modal { transform:scale(1); }
+.modal-head { padding:24px 28px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:var(--surface); z-index:10; }
+.modal-head h3 { font-size:1.1rem; font-weight:700; }
+.modal-close { width:32px; height:32px; background:var(--surface2); border:none; border-radius:8px; color:var(--muted); cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.modal-close:hover { background:var(--border); color:var(--text); }
+.modal-body { padding:24px 28px; }
+.modal-foot { padding:16px 28px 24px; display:flex; justify-content:flex-end; gap:12px; position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); }
+
+/* ── FORM ── */
+.form-row  { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.field-group { margin-bottom:16px; }
+.field-group label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:7px; letter-spacing:0.03em; }
+.field-group input, .field-group select, .field-group textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); padding:11px 14px; font-size:0.9rem; outline:none; font-family:inherit; transition:border-color 0.2s; }
+.field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color:var(--accent); }
+.field-group textarea { resize:vertical; min-height:110px; line-height:1.6; }
+.section-divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+.section-title { font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:12px; font-weight:600; }
+
+/* ── IMAGE UPLOAD ── */
+.img-upload-area {
+  border:2px dashed var(--border);
+  border-radius:14px;
+  background:var(--surface2);
+  cursor:pointer;
+  transition:border-color 0.2s, background 0.2s;
+  overflow:hidden;
+  position:relative;
+  min-height:160px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.img-upload-area:hover { border-color:var(--accent); background:rgba(108,99,255,0.05); }
+.img-upload-area img { width:100%; max-height:240px; object-fit:cover; display:block; }
+.img-upload-placeholder { text-align:center; padding:28px 20px; pointer-events:none; }
+.img-upload-placeholder .ph-icon { font-size:2.5rem; margin-bottom:10px; }
+.img-upload-placeholder .ph-txt  { font-size:0.9rem; color:var(--muted); }
+.img-upload-placeholder .ph-sub  { font-size:0.75rem; color:var(--muted); margin-top:4px; opacity:0.7; }
+.img-upload-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; font-size:0.85rem; font-weight:600; color:#fff; gap:6px; }
+.img-upload-area:hover .img-upload-overlay { display:flex; }
+
+/* ── PROGRESS ── */
+.progress-wrap { background:var(--surface2); border-radius:20px; height:8px; overflow:hidden; margin-top:12px; }
+.progress-bar  { height:100%; border-radius:20px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width 0.5s; }
+
+/* ── CACHE ── */
+.cache-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.cache-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; align-items:center; gap:12px; }
+.cache-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.cache-dot.hit  { background:var(--green); box-shadow:0 0 8px rgba(34,197,94,0.5); }
+.cache-dot.miss { background:var(--border); }
+.cache-key  { font-size:0.85rem; font-weight:600; }
+.cache-meta { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+
+/* ── TOAST ── */
+.toast-container { position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
+.toast { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:10px; font-size:0.875rem; min-width:280px; box-shadow:var(--shadow); animation:slideIn 0.3s ease; }
+.toast.success { border-color:rgba(34,197,94,0.4); }
+.toast.error   { border-color:rgba(239,68,68,0.4); }
+@keyframes slideIn { from { transform:translateX(100px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+/* ── MISC ── */
+.empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+.empty-state .icon { font-size:3rem; margin-bottom:16px; }
+.empty-state h3 { font-size:1rem; color:var(--text); margin-bottom:8px; }
+.loading { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.thumb-img { width:48px; height:48px; border-radius:8px; object-fit:cover; }
+.thumb-empty { width:48px; height:48px; border-radius:8px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+.qr-link { font-size:0.78rem; color:var(--accent2); text-decoration:none; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
+.qr-link:hover { text-decoration:underline; }
+select option { background:var(--surface2); color:var(--text); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">🏛️</div>
+      <h1>Admin Panel</h1>
+      <p>O'zbekiston Davlat Tarixi Muzeyi</p>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <div class="fg"><label>Foydalanuvchi nomi</label><input type="text" id="inp-user" placeholder="admin" autocomplete="username" /></div>
+    <div class="fg"><label>Parol</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" /></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()"><span id="login-btn-text">Kirish</span></button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🏛️</div>
+      <div class="brand-text"><h2>Muzey Admin</h2><p>Boshqaruv paneli</p></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Asosiy</div>
+      <button class="nav-item active" onclick="gotoPage('dashboard')"   id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+      <div class="nav-section-label">Kontent</div>
+      <button class="nav-item" onclick="gotoPage('bolimlar')"    id="nav-bolimlar"><span class="nav-icon">🗂️</span> Bo'limlar</button>
+      <button class="nav-item" onclick="gotoPage('vitrinalar')"  id="nav-vitrinalar"><span class="nav-icon">🪟</span> Vitrinalar</button>
+      <button class="nav-item" onclick="gotoPage('eksponatlar')" id="nav-eksponatlar"><span class="nav-icon">🏺</span> Eksponatlar</button>
+      <div class="nav-section-label">Tizim</div>
+      <button class="nav-item" onclick="gotoPage('likes')" id="nav-likes"><span class="nav-icon">❤️</span> Sevimlilar</button>
+      <button class="nav-item" onclick="gotoPage('cache')" id="nav-cache"><span class="nav-icon">🔊</span> Audio Cache</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="avatar">A</div>
+        <div class="user-info"><p id="sidebar-username">Admin</p><span>Super admin</span></div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">🚪 Chiqish</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div><h1 id="page-title">Dashboard</h1><div class="breadcrumb" id="page-breadcrumb">Admin → Dashboard</div></div>
+      <div class="page-actions" id="page-actions"></div>
+    </header>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(108,99,255,0.15)">🗂️</div><div><div class="stat-value" id="stat-bolimlar">—</div><div class="stat-label">Bo'limlar</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(167,139,250,0.15)">🪟</div><div><div class="stat-value" id="stat-vitrinalar">—</div><div class="stat-label">Vitrinalar</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(245,200,66,0.15)">🏺</div><div><div class="stat-value" id="stat-eksponatlar">—</div><div class="stat-label">Eksponatlar</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(34,197,94,0.15)">🔊</div><div><div class="stat-value" id="stat-cache">—</div><div class="stat-label">Audio cache</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(99,199,255,0.15)">👁️</div><div><div class="stat-value" id="stat-today-views">—</div><div class="stat-label">Bugungi tashriflar</div></div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(255,150,100,0.15)">🎧</div><div><div class="stat-value" id="stat-today-audio">—</div><div class="stat-label">Bugungi tinglanishlar</div></div></div>
+        </div>
+        <div class="table-card" style="margin-bottom:24px">
+          <div class="table-header">
+            <div><h3>Audio holati</h3><div class="table-meta" id="cache-meta-text">Yuklanmoqda...</div></div>
+            <button class="btn btn-secondary btn-sm" onclick="warmCache()">🔥 Warm up</button>
+          </div>
+          <div style="padding:24px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem"><span>Yaratilgan audiolar</span><span id="cache-progress-text" style="color:var(--accent2)">0 / 0</span></div>
+            <div class="progress-wrap"><div class="progress-bar" id="cache-progress-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+          <div class="table-card">
+            <div class="table-header"><h3>👁️ Ko'p ko'rilgan</h3></div>
+            <div class="table-wrap"><table><thead><tr><th>#</th><th>Eksponat</th><th>Ko'rishlar</th></tr></thead>
+            <tbody id="dash-top-viewed"></tbody></table></div>
+          </div>
+          <div class="table-card">
+            <div class="table-header"><h3>🎧 Ko'p tinglangan</h3></div>
+            <div class="table-wrap"><table><thead><tr><th>#</th><th>Eksponat</th><th>Tinglanish</th></tr></thead>
+            <tbody id="dash-top-audio"></tbody></table></div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><h3>Oxirgi eksponatlar</h3><button class="btn btn-secondary btn-sm" onclick="gotoPage('eksponatlar')">Barchasi →</button></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Rasm</th><th>Nomi (UZ)</th><th>Davr</th><th>Bo'lim</th></tr></thead>
+            <tbody id="dash-eks-body"><tr><td colspan="4"><div class="empty-state"><div class="icon">🏺</div><p>Hali eksponatlar yo'q</p></div></td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- BO'LIMLAR -->
+      <div class="page" id="page-bolimlar">
+        <div class="table-card">
+          <div class="table-header"><div><h3>Bo'limlar</h3><div class="table-meta" id="bolimlar-count-text">Yuklanmoqda...</div></div><button class="btn btn-primary btn-sm" onclick="openBolimModal()">+ Qo'shish</button></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>ID</th><th>Nomi (UZ)</th><th>Nomi (RU)</th><th>Nomi (EN)</th><th>Mas'ul shaxs</th><th>Telefon</th><th>Vitrinalar</th><th>Amallar</th></tr></thead>
+            <tbody id="bolimlar-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VITRINALAR -->
+      <div class="page" id="page-vitrinalar">
+        <div class="table-card">
+          <div class="table-header"><div><h3>Vitrinalar</h3><div class="table-meta" id="vitrinalar-count-text">Yuklanmoqda...</div></div><button class="btn btn-primary btn-sm" onclick="openVitrinaModal()">+ Qo'shish</button></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>ID</th><th>Bo'lim</th><th>Nomi</th><th>Joy</th><th>QR havola</th><th>Amallar</th></tr></thead>
+            <tbody id="vitrinalar-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- EKSPONATLAR -->
+      <div class="page" id="page-eksponatlar">
+        <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+          <select id="eks-filter-bolim" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:var(--radius);outline:none;font-family:inherit" onchange="filterEksponatlar()">
+            <option value="">Barcha bo'limlar</option>
+          </select>
+          <select id="eks-filter-vitrina" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:var(--radius);outline:none;font-family:inherit" onchange="applyEksFilter()">
+            <option value="">Barcha vitrinalar</option>
+          </select>
+          <span style="flex:1"></span>
+          <button class="btn btn-primary btn-sm" onclick="openEksponatModal()">+ Eksponat qo'shish</button>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><div><h3>Eksponatlar</h3><div class="table-meta" id="eksponatlar-count-text">Yuklanmoqda...</div></div></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Rasm</th><th>Nomi (UZ)</th><th>Davr</th><th>Bo'lim</th><th>Vitrina</th><th>Tartib</th><th>Amallar</th></tr></thead>
+            <tbody id="eksponatlar-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEVIMLILAR -->
+      <div class="page" id="page-likes">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <div><h2 style="font-size:1.1rem;font-weight:700">❤️ Sevimlilar reytingi</h2><p style="font-size:0.85rem;color:var(--muted);margin-top:4px">Tashrif buyuruvchilar eng ko'p yoqtirgan eksponatlar</p></div>
+          <button class="btn btn-secondary" onclick="loadLikes()">🔄 Yangilash</button>
+        </div>
+        <div class="table-card">
+          <div class="table-wrap">
+            <table><thead><tr><th>#</th><th>Rasm</th><th>Eksponat</th><th>Davr</th><th>Yoqtirishlar</th><th>Reyting</th></tr></thead>
+            <tbody id="likes-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CACHE -->
+      <div class="page" id="page-cache">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div><h2 style="font-size:1.1rem;font-weight:700">🔊 Audio Cache</h2><p style="font-size:0.85rem;color:var(--muted);margin-top:4px">Server tomonida saqlangan barcha audio fayllar</p></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="loadCache()">🔄 Yangilash</button>
+            <button class="btn btn-primary"   onclick="warmCache()">🔥 Warm up</button>
+            <button class="btn btn-danger"    onclick="clearCache()">🗑️ Tozalash</button>
+          </div>
+        </div>
+        <!-- Filter -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input id="cache-search" type="text" placeholder="Eksponat nomi bo'yicha qidiring..."
+            style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:var(--radius);outline:none;font-family:inherit;font-size:0.875rem"
+            oninput="filterCache()" />
+          <select id="cache-lang-filter"
+            style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:var(--radius);outline:none;font-family:inherit"
+            onchange="filterCache()">
+            <option value="">Barcha tillar</option>
+            <option value="uz">O'zbek</option>
+            <option value="ru">Rus</option>
+            <option value="en">Ingliz</option>
+          </select>
+          <select id="cache-status-filter"
+            style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:var(--radius);outline:none;font-family:inherit"
+            onchange="filterCache()">
+            <option value="">Barchasi</option>
+            <option value="ready">✓ Tayyor</option>
+            <option value="missing">✗ Yo'q</option>
+          </select>
+          <span id="cache-count-text" style="align-self:center;font-size:0.82rem;color:var(--muted)"></span>
+        </div>
+        <div class="table-card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Holat</th><th>Eksponat</th><th>Davr</th><th>Til</th><th>Audio</th></tr></thead>
+              <tbody id="cache-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<!-- MODAL: Bo'lim -->
+<div class="modal-overlay" id="bolim-modal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="bolim-modal-title">Bo'lim qo'shish</h3><button class="modal-close" onclick="closeModal('bolim-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="bolim-id" />
+      <p class="section-title">Nomi</p>
+      <div class="form-row">
+        <div class="field-group"><label>O'zbek tili</label><input id="bolim-nomi-uz" placeholder="Bronza davri" /></div>
+        <div class="field-group"><label>Русский язык</label><input id="bolim-nomi-ru" placeholder="Бронзовый век" /></div>
+      </div>
+      <div class="field-group"><label>English</label><input id="bolim-nomi-en" placeholder="Bronze Age" /></div>
+      <p class="section-title" style="margin-top:4px">Tavsif (ixtiyoriy)</p>
+      <div class="form-row">
+        <div class="field-group"><label>O'zbek</label><textarea id="bolim-tavsif-uz" placeholder="Bo'lim haqida qisqa matn..."></textarea></div>
+        <div class="field-group"><label>Русский</label><textarea id="bolim-tavsif-ru" placeholder="Краткое описание..."></textarea></div>
+      </div>
+      <div class="field-group"><label>English</label><textarea id="bolim-tavsif-en" placeholder="Brief description..."></textarea></div>
+      <hr class="section-divider" />
+      <p class="section-title">Mas'ul shaxs</p>
+      <div class="form-row">
+        <div class="field-group"><label>Ismi</label><input id="bolim-masul-ism" placeholder="Sarvarbek" /></div>
+        <div class="field-group"><label>Familyasi</label><input id="bolim-masul-familya" placeholder="Rahimov" /></div>
+      </div>
+      <div class="field-group"><label>Telefon</label><input id="bolim-masul-tel" placeholder="+998 90 123 45 67" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('bolim-modal')">Bekor</button>
+      <button class="btn btn-primary" onclick="saveBolim()"><span id="bolim-save-txt">Saqlash</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Vitrina -->
+<div class="modal-overlay" id="vitrina-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Vitrina qo'shish</h3><button class="modal-close" onclick="closeModal('vitrina-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-group"><label>Bo'lim *</label><select id="vitrina-bolim"><option value="">— Bo'limni tanlang —</option></select></div>
+      <div class="form-row">
+        <div class="field-group"><label>Nomi (UZ) *</label><input id="vitrina-nomi-uz" placeholder="1-vitrina" /></div>
+        <div class="field-group"><label>Nomi (RU)</label><input id="vitrina-nomi-ru" placeholder="Витрина 1" /></div>
+      </div>
+      <div class="field-group"><label>Nomi (EN)</label><input id="vitrina-nomi-en" placeholder="Showcase 1" /></div>
+      <div class="field-group"><label>Joylashuvi</label><input id="vitrina-joy" placeholder="Shimoliy zal, 3-qator" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('vitrina-modal')">Bekor</button>
+      <button class="btn btn-primary" onclick="saveVitrina()">Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Eksponat -->
+<div class="modal-overlay" id="eks-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head"><h3 id="eks-modal-title">Eksponat qo'shish</h3><button class="modal-close" onclick="closeModal('eks-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="eks-id" />
+      <input type="hidden" id="eks-image-url" />
+      <input type="file"   id="eks-image-input" accept="image/*" style="display:none" onchange="previewImage(this)" />
+
+      <!-- Image upload -->
+      <p class="section-title">Rasm</p>
+      <div class="img-upload-area" id="eks-image-area" onclick="g('eks-image-input').click()">
+        <img id="eks-image-preview" src="" style="display:none;width:100%;max-height:240px;object-fit:cover" />
+        <div class="img-upload-placeholder" id="eks-image-ph">
+          <div class="ph-icon">🖼️</div>
+          <div class="ph-txt">Rasm yuklash uchun bosing</div>
+          <div class="ph-sub">JPG, PNG, WebP · Tavsiya: 800×600 px</div>
+        </div>
+        <div class="img-upload-overlay">✏️ Rasmni o'zgartirish</div>
+      </div>
+
+      <hr class="section-divider" />
+      <!-- Bolim & Vitrina -->
+      <p class="section-title">Joylashuvi</p>
+      <div class="form-row">
+        <div class="field-group"><label>Bo'lim *</label><select id="eks-bolim" onchange="loadVitrinaForEks()"><option value="">— tanlang —</option></select></div>
+        <div class="field-group"><label>Vitrina *</label><select id="eks-vitrina"><option value="">— avval bo'lim tanlang —</option></select></div>
+      </div>
+      <div class="field-group" style="max-width:120px"><label>Tartib</label><input type="number" id="eks-tartib" value="0" min="0" /></div>
+
+      <hr class="section-divider" />
+      <!-- Nomi -->
+      <p class="section-title">Eksponat nomi</p>
+      <div class="form-row3">
+        <div class="field-group"><label>UZ *</label><input id="eks-name-uz" placeholder="Tosh bolta" /></div>
+        <div class="field-group"><label>RU</label><input id="eks-name-ru" placeholder="Каменный топор" /></div>
+        <div class="field-group"><label>EN</label><input id="eks-name-en" placeholder="Stone Axe" /></div>
+      </div>
+
+      <!-- Davr -->
+      <p class="section-title">Davr (katta harfda)</p>
+      <div class="form-row3">
+        <div class="field-group"><label>UZ</label><input id="eks-era-uz" placeholder="TOSH DAVRI" /></div>
+        <div class="field-group"><label>RU</label><input id="eks-era-ru" placeholder="КАМЕННЫЙ ВЕК" /></div>
+        <div class="field-group"><label>EN</label><input id="eks-era-en" placeholder="STONE AGE" /></div>
+      </div>
+
+      <!-- Sana -->
+      <p class="section-title">Sana / davr oralig'i</p>
+      <div class="form-row3">
+        <div class="field-group"><label>UZ</label><input id="eks-date-uz" placeholder="M.av. 8000–3000 yil" /></div>
+        <div class="field-group"><label>RU</label><input id="eks-date-ru" placeholder="8000–3000 до н.э." /></div>
+        <div class="field-group"><label>EN</label><input id="eks-date-en" placeholder="8000–3000 BC" /></div>
+      </div>
+
+      <hr class="section-divider" />
+      <!-- Matn -->
+      <p class="section-title">Matn (audio uchun o'qiladi)</p>
+      <div class="field-group"><label>O'zbek tili *</label><textarea id="eks-text-uz" style="min-height:130px" placeholder="Bu eksponat haqida batafsil ma'lumot... Tashrif buyuruvchiga audio orqali aytiladi."></textarea></div>
+      <div class="field-group"><label>Русский язык</label><textarea id="eks-text-ru" style="min-height:130px" placeholder="Подробная информация об экспонате..."></textarea></div>
+      <div class="field-group"><label>English</label><textarea id="eks-text-en" style="min-height:130px" placeholder="Detailed information about the exhibit..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('eks-modal')">Bekor</button>
+      <button class="btn btn-primary" onclick="saveEksponat()"><span id="eks-save-txt">Saqlash</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: QR Code -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head"><h3 id="qr-modal-title">QR Kod</h3><button class="modal-close" onclick="closeModal('qr-modal')">✕</button></div>
+    <div class="modal-body" style="text-align:center">
+      <div id="qr-code-box" style="background:#fff;padding:20px;border-radius:14px;display:inline-block;margin-bottom:16px"></div>
+      <p id="qr-url-text" style="font-size:0.78rem;color:var(--muted);word-break:break-all;margin-bottom:4px"></p>
+      <p style="font-size:0.75rem;color:var(--muted)">Rasmni bosib ushlab yuklab olishingiz mumkin</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('qr-modal')">Yopish</button>
+      <button class="btn btn-primary" onclick="downloadQR()">⬇ Yuklab olish</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Delete -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head"><h3>O'chirishni tasdiqlang</h3><button class="modal-close" onclick="closeModal('del-modal')">✕</button></div>
+    <div class="modal-body"><p style="color:var(--muted);font-size:0.9rem" id="del-msg">Ushbu yozuvni o'chirishni xohlaysizmi?</p></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('del-modal')">Bekor</button>
+      <button class="btn btn-danger" id="del-confirm-btn">O'chirish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('admin_token') || '';
+let bolimlarData    = [];
+let vitrinalarData  = [];
+let eksponatlarData = [];
+
+// ── AUTH ──────────────────────────────────────────────────────
+async function doLogin() {
+  const errEl = g('login-error'), btnTxt = g('login-btn-text');
+  errEl.style.display = 'none';
+  btnTxt.innerHTML = '<span class="loading"></span>';
+  try {
+    const r = await fetch(`${API}/api/admin/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:gv('inp-user'), password:gv('inp-pass')}) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Login xatosi');
+    token = d.token;
+    localStorage.setItem('admin_token', token);
+    g('sidebar-username').textContent = gv('inp-user');
+    enterApp();
+  } catch(e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  finally { btnTxt.textContent = 'Kirish'; }
+}
+g('inp-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+function doLogout() {
+  fetch(`${API}/api/admin/logout`, {method:'POST', headers:authH()}).catch(()=>{});
+  localStorage.removeItem('admin_token'); token = '';
+  g('login-screen').style.display = 'flex';
+  g('app').style.display = 'none';
+}
+function authH() { return {'Authorization':`Bearer ${token}`, 'Content-Type':'application/json'}; }
+function enterApp() { g('login-screen').style.display='none'; g('app').style.display='block'; loadDashboard(); }
+
+(async () => {
+  if (!token) return;
+  try { const r = await fetch(`${API}/api/admin/stats`,{headers:authH()}); if (r.ok) enterApp(); else { localStorage.removeItem('admin_token'); token=''; } } catch {}
+})();
+
+// ── NAVIGATION ────────────────────────────────────────────────
+const pages = {
+  dashboard:   { title:'Dashboard',       crumb:'Admin → Dashboard',       load:loadDashboard },
+  bolimlar:    { title:"Bo'limlar",       crumb:"Admin → Bo'limlar",       load:loadBolimlar },
+  vitrinalar:  { title:'Vitrinalar',      crumb:'Admin → Vitrinalar',      load:loadVitrinalar },
+  eksponatlar: { title:'Eksponatlar',     crumb:'Admin → Eksponatlar',     load:loadEksponatlar },
+  likes:       { title:'Sevimlilar',      crumb:'Admin → Sevimlilar',      load:loadLikes },
+  cache:       { title:'Audio Cache',     crumb:'Admin → Audio Cache',     load:loadCache },
+};
+function gotoPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  g(`page-${name}`).classList.add('active');
+  g(`nav-${name}`).classList.add('active');
+  const pg = pages[name];
+  g('page-title').textContent = pg.title;
+  g('page-breadcrumb').textContent = pg.crumb;
+  pg.load();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const r = await fetch(`${API}/api/admin/stats`,{headers:authH()});
+    if (r.status===401) { doLogout(); return; }
+    const d = await r.json();
+    g('stat-bolimlar').textContent    = d.bolimlar    ?? 0;
+    g('stat-vitrinalar').textContent  = d.vitrinalar  ?? 0;
+    g('stat-eksponatlar').textContent = d.eksponatlar ?? 0;
+    g('stat-cache').textContent       = d.audio_cache ?? 0;
+    const total = (d.eksponatlar||0)*3;
+    const cached = d.audio_cache||0;
+    const pct = total>0 ? Math.round(cached/total*100) : 0;
+    g('cache-progress-bar').style.width = pct+'%';
+    g('cache-progress-text').textContent = `${cached} / ${total}`;
+    g('cache-meta-text').textContent = `${pct}% tayyor`;
+  } catch {}
+  // Tashrif statistikasi
+  try {
+    const rv = await fetch(`${API}/api/admin/stats/visits`,{headers:authH()});
+    if (rv.ok) {
+      const vs = await rv.json();
+      g('stat-today-views').textContent = vs.today_views ?? 0;
+      g('stat-today-audio').textContent = vs.today_audio ?? 0;
+      const renderTop = (tbody, list) => {
+        if (!list.length) { g(tbody).innerHTML=`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:16px">Hali ma'lumot yo'q</td></tr>`; return; }
+        g(tbody).innerHTML = list.map((e,i)=>`<tr>
+          <td><span class="badge badge-gray">${i+1}</span></td>
+          <td style="font-size:0.85rem">${esc(e.name?.uz||`#${e.id}`)}</td>
+          <td><strong style="color:var(--accent2)">${e.count}</strong></td>
+        </tr>`).join('');
+      };
+      renderTop('dash-top-viewed', vs.top_viewed||[]);
+      renderTop('dash-top-audio',  vs.top_audio||[]);
+    }
+  } catch {}
+  try {
+    const [re,rb,rv] = await Promise.all([
+      fetch(`${API}/api/admin/eksponatlar`,{headers:authH()}),
+      fetch(`${API}/api/admin/bolimlar`,{headers:authH()}),
+      fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}),
+    ]);
+    eksponatlarData = await re.json();
+    bolimlarData    = await rb.json();
+    vitrinalarData  = await rv.json();
+    const bMap = {}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
+    const tbody = g('dash-eks-body');
+    if (!eksponatlarData.length) { tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">🏺</div><p>Hali eksponatlar yo'q</p></div></td></tr>`; return; }
+    tbody.innerHTML = eksponatlarData.slice(0,8).map(e=>`
+      <tr>
+        <td>${e.image_url?`<img class="thumb-img" src="${esc(e.image_url)}" />`:`<div class="thumb-empty">🏺</div>`}</td>
+        <td><strong>${esc(e.name?.uz||'—')}</strong></td>
+        <td><span class="badge badge-orange" style="font-size:0.7rem">${esc(e.era?.uz||'—')}</span></td>
+        <td>${esc(bMap[e.bolim_id]||'—')}</td>
+      </tr>`).join('');
+  } catch {}
+}
+
+// ── BO'LIMLAR ─────────────────────────────────────────────────
+async function loadBolimlar() {
+  const tbody = g('bolimlar-body');
+  tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:30px"><span class="loading"></span></td></tr>`;
+  try {
+    const r = await fetch(`${API}/api/admin/bolimlar`,{headers:authH()});
+    if (r.status===401) { doLogout(); return; }
+    bolimlarData = await r.json();
+    g('bolimlar-count-text').textContent=`Jami: ${bolimlarData.length} ta bo'lim`;
+    if (!bolimlarData.length) { tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">🗂️</div><h3>Bo'limlar yo'q</h3><p>"+ Qo'shish" tugmasini bosing</p></div></td></tr>`; return; }
+    tbody.innerHTML = bolimlarData.map(b=>`
+      <tr>
+        <td><span class="badge badge-gray">#${b.id}</span></td>
+        <td><strong>${esc(b.nomi?.uz||'—')}</strong></td>
+        <td>${esc(b.nomi?.ru||'—')}</td>
+        <td>${esc(b.nomi?.en||'—')}</td>
+        <td><div style="font-size:0.85rem;font-weight:600">${esc(b.masul_ism||'')} ${esc(b.masul_familya||'')}</div></td>
+        <td style="font-size:0.82rem;color:var(--muted)">${esc(b.masul_tel||'—')}</td>
+        <td><span class="badge badge-blue">${b.vitrina_count??0}</span></td>
+        <td><div class="actions">
+          <button class="btn btn-sm btn-edit" onclick="editBolim(${b.id})">✏️</button>
+          <button class="btn btn-sm btn-del"  onclick="confirmDelete('bolim',${b.id})">🗑️</button>
+        </div></td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML=`<tr><td colspan="8" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+}
+
+function openBolimModal() {
+  g('bolim-id').value=''; g('bolim-modal-title').textContent="Bo'lim qo'shish"; g('bolim-save-txt').textContent='Saqlash';
+  ['nomi-uz','nomi-ru','nomi-en','tavsif-uz','tavsif-ru','tavsif-en','masul-ism','masul-familya','masul-tel'].forEach(k=>g('bolim-'+k).value='');
+  openModal('bolim-modal');
+}
+function editBolim(id) {
+  const b = bolimlarData.find(x=>x.id===id); if(!b) return;
+  g('bolim-id').value=id; g('bolim-modal-title').textContent="Bo'limni tahrirlash"; g('bolim-save-txt').textContent='Yangilash';
+  g('bolim-nomi-uz').value=b.nomi?.uz||''; g('bolim-nomi-ru').value=b.nomi?.ru||''; g('bolim-nomi-en').value=b.nomi?.en||'';
+  g('bolim-tavsif-uz').value=b.tavsif?.uz||''; g('bolim-tavsif-ru').value=b.tavsif?.ru||''; g('bolim-tavsif-en').value=b.tavsif?.en||'';
+  g('bolim-masul-ism').value=b.masul_ism||''; g('bolim-masul-familya').value=b.masul_familya||''; g('bolim-masul-tel').value=b.masul_tel||'';
+  openModal('bolim-modal');
+}
+async function saveBolim() {
+  const id = g('bolim-id').value;
+  const body = {nomi:{uz:gv('bolim-nomi-uz'),ru:gv('bolim-nomi-ru'),en:gv('bolim-nomi-en')},tavsif:{uz:gv('bolim-tavsif-uz'),ru:gv('bolim-tavsif-ru'),en:gv('bolim-tavsif-en')},masul_ism:gv('bolim-masul-ism'),masul_familya:gv('bolim-masul-familya'),masul_tel:gv('bolim-masul-tel')};
+  if (!body.nomi.uz) { toast("O'zbek tilida nom kiriting",'error'); return; }
+  const btn=g('bolim-save-txt'); btn.innerHTML='<span class="loading"></span>';
+  try {
+    const r = await fetch(id?`${API}/api/admin/bolimlar/${id}`:`${API}/api/admin/bolimlar`, {method:id?'PUT':'POST',headers:authH(),body:JSON.stringify(body)});
+    if (!r.ok) throw new Error((await r.json()).detail||'Xato');
+    closeModal('bolim-modal'); toast(id?"Bo'lim yangilandi":"Bo'lim qo'shildi",'success'); loadBolimlar();
+  } catch(e) { toast(e.message,'error'); }
+  finally { btn.textContent=id?'Yangilash':'Saqlash'; }
+}
+
+// ── VITRINALAR ────────────────────────────────────────────────
+async function loadVitrinalar() {
+  const tbody=g('vitrinalar-body');
+  tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px"><span class="loading"></span></td></tr>`;
+  try {
+    const [rv,rb] = await Promise.all([fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}),fetch(`${API}/api/admin/bolimlar`,{headers:authH()})]);
+    if (rv.status===401) { doLogout(); return; }
+    vitrinalarData=await rv.json(); bolimlarData=await rb.json();
+    g('vitrinalar-count-text').textContent=`Jami: ${vitrinalarData.length} ta vitrina`;
+    if (!vitrinalarData.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">🪟</div><h3>Vitrinalar yo'q</h3><p>Yangi vitrina qo'shing</p></div></td></tr>`; return; }
+    const bMap={}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
+    tbody.innerHTML = vitrinalarData.map(v=>{
+      const qrUrl=`${location.origin}/?vitrina=${v.id}`;
+      return `<tr>
+        <td><span class="badge badge-gray">#${v.id}</span></td>
+        <td><span class="badge badge-blue">${esc(bMap[v.bolim_id]||'—')}</span></td>
+        <td><strong>${esc(v.nomi?.uz||'—')}</strong></td>
+        <td style="font-size:0.82rem;color:var(--muted)">${esc(v.joy||'—')}</td>
+        <td><div style="display:flex;align-items:center;gap:6px"><a class="qr-link" href="${esc(qrUrl)}" target="_blank">?vitrina=${v.id}</a><button class="btn btn-secondary btn-sm" onclick="copyQR('${esc(qrUrl)}')">📋</button></div></td>
+        <td><div class="actions">
+          <button class="btn btn-sm btn-edit" onclick="showQR(${v.id},'${esc(v.nomi?.uz||'')}')">🔲 QR</button>
+          <button class="btn btn-sm btn-del" onclick="confirmDelete('vitrina',${v.id})">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML=`<tr><td colspan="6" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+}
+function copyQR(url) { navigator.clipboard.writeText(url).then(()=>toast('Nusxalandi','success')).catch(()=>{}); }
+async function openVitrinaModal() {
+  const sel=g('vitrina-bolim'); sel.innerHTML="<option value=''>— Bo'limni tanlang —</option>";
+  if (!bolimlarData.length) { const r=await fetch(`${API}/api/admin/bolimlar`,{headers:authH()}); bolimlarData=await r.json(); }
+  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;sel.appendChild(o);});
+  ['nomi-uz','nomi-ru','nomi-en','joy'].forEach(k=>g('vitrina-'+k).value='');
+  openModal('vitrina-modal');
+}
+async function saveVitrina() {
+  if (!gv('vitrina-bolim'))    { toast("Bo'limni tanlang",'error'); return; }
+  if (!gv('vitrina-nomi-uz'))  { toast("Vitrina nomini kiriting",'error'); return; }
+  const body={bolim_id:parseInt(gv('vitrina-bolim')),nomi:{uz:gv('vitrina-nomi-uz'),ru:gv('vitrina-nomi-ru'),en:gv('vitrina-nomi-en')},joy:gv('vitrina-joy')};
+  try {
+    const r=await fetch(`${API}/api/admin/vitrinalar`,{method:'POST',headers:authH(),body:JSON.stringify(body)});
+    if (!r.ok) throw new Error((await r.json()).detail||'Xato');
+    closeModal('vitrina-modal'); toast("Vitrina qo'shildi",'success'); loadVitrinalar();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── EKSPONATLAR ───────────────────────────────────────────────
+let eksFilterBolim='', eksFilterVitrina='';
+
+async function loadEksponatlar() {
+  const tbody=g('eksponatlar-body');
+  tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:30px"><span class="loading"></span></td></tr>`;
+  try {
+    const [re,rb,rv]=await Promise.all([
+      fetch(`${API}/api/admin/eksponatlar`,{headers:authH()}),
+      fetch(`${API}/api/admin/bolimlar`,{headers:authH()}),
+      fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}),
+    ]);
+    if (re.status===401) { doLogout(); return; }
+    eksponatlarData=await re.json(); bolimlarData=await rb.json(); vitrinalarData=await rv.json();
+    // fill filter dropdowns
+    const bSel=g('eks-filter-bolim'), bPrev=bSel.value;
+    bSel.innerHTML="<option value=''>Barcha bo'limlar</option>";
+    bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.nomi?.uz||`#${b.id}`;if(String(b.id)===bPrev)o.selected=true;bSel.appendChild(o);});
+    filterEksponatlar();
+  } catch(e) { tbody.innerHTML=`<tr><td colspan="7" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+}
+
+function filterEksponatlar() {
+  eksFilterBolim=gv('eks-filter-bolim');
+  // rebuild vitrina filter
+  const vSel=g('eks-filter-vitrina'), vPrev=vSel.value;
+  vSel.innerHTML="<option value=''>Barcha vitrinalar</option>";
+  vitrinalarData.filter(v=>!eksFilterBolim||String(v.bolim_id)===eksFilterBolim).forEach(v=>{
+    const o=document.createElement('option');o.value=v.id;o.textContent=v.nomi?.uz||`#${v.id}`;if(String(v.id)===vPrev)o.selected=true;vSel.appendChild(o);
+  });
+  applyEksFilter();
+}
+function applyEksFilter() {
+  eksFilterBolim  =gv('eks-filter-bolim');
+  eksFilterVitrina=gv('eks-filter-vitrina');
+  const bMap={}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
+  const vMap={}; vitrinalarData.forEach(v=>vMap[v.id]=v.nomi?.uz||`#${v.id}`);
+  let list=eksponatlarData;
+  if (eksFilterBolim)   list=list.filter(e=>String(e.bolim_id)  ===eksFilterBolim);
+  if (eksFilterVitrina) list=list.filter(e=>String(e.vitrina_id)===eksFilterVitrina);
+  g('eksponatlar-count-text').textContent=`Jami: ${list.length} ta eksponat`;
+  const tbody=g('eksponatlar-body');
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="icon">🏺</div><h3>Eksponatlar yo'q</h3><p>Yangi eksponat qo'shing</p></div></td></tr>`; return; }
+  const canDrag = !!eksFilterVitrina; // faqat vitrina filteri bo'lganda drag ishlaydi
+  tbody.innerHTML=list.map(e=>`
+    <tr data-id="${e.id}" ${canDrag?'draggable="true"':''} style="${canDrag?'cursor:grab':''}">
+      <td>${canDrag?'<span style="color:var(--muted);font-size:1.1rem;padding-right:4px;cursor:grab">⠿</span>':''
+        }${e.image_url?`<img class="thumb-img" src="${esc(e.image_url)}" />`:`<div class="thumb-empty">🏺</div>`}</td>
+      <td><strong>${esc(e.name?.uz||'—')}</strong></td>
+      <td><span class="badge badge-orange" style="font-size:0.7rem">${esc(e.era?.uz||'—')}</span></td>
+      <td>${esc(bMap[e.bolim_id]||'—')}</td>
+      <td>${esc(vMap[e.vitrina_id]||'—')}</td>
+      <td style="text-align:center">${e.tartib??0}</td>
+      <td><div class="actions">
+        <button class="btn btn-sm btn-edit" onclick="editEksponat(${e.id})">✏️</button>
+        <button class="btn btn-sm btn-del"  onclick="confirmDelete('eksponat',${e.id})">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+  if (canDrag) initDragDrop(tbody);
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────
+let _dragSrc = null;
+function initDragDrop(tbody) {
+  tbody.querySelectorAll('tr[data-id]').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      _dragSrc = row; row.style.opacity='0.45';
+      e.dataTransfer.effectAllowed='move';
+    });
+    row.addEventListener('dragend', () => {
+      row.style.opacity='';
+      tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault(); e.dataTransfer.dropEffect='move';
+      tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('drop', async e => {
+      e.preventDefault();
+      if (!_dragSrc || _dragSrc===row) return;
+      const rows=[...tbody.querySelectorAll('tr[data-id]')];
+      const si=rows.indexOf(_dragSrc), di=rows.indexOf(row);
+      if (si<di) tbody.insertBefore(_dragSrc, row.nextSibling);
+      else        tbody.insertBefore(_dragSrc, row);
+      tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over'));
+      await saveDragOrder(tbody);
+    });
+  });
+}
+async function saveDragOrder(tbody) {
+  const rows=[...tbody.querySelectorAll('tr[data-id]')];
+  const updates=[];
+  rows.forEach((row,i)=>{
+    const id=parseInt(row.dataset.id);
+    const ex=eksponatlarData.find(e=>e.id===id);
+    if (ex && ex.tartib!==i+1) updates.push({...ex, tartib:i+1});
+  });
+  if (!updates.length) return;
+  await Promise.all(updates.map(ex=>
+    fetch(`${API}/api/admin/eksponatlar/${ex.id}`,{method:'PUT',headers:authH(),body:JSON.stringify({
+      vitrina_id:ex.vitrina_id, bolim_id:ex.bolim_id, image_url:ex.image_url||'',
+      era:ex.era, name:ex.name, date:ex.date, text:ex.text, tartib:ex.tartib,
+    })})
+  ));
+  toast('Tartib saqlandi','success');
+  loadEksponatlar();
+}
+
+// ── IMAGE UPLOAD ──────────────────────────────────────────────
+function previewImage(input) {
+  const file=input.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=g('eks-image-preview'), ph=g('eks-image-ph');
+    img.src=e.target.result; img.style.display='block'; ph.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function setImagePreview(url) {
+  g('eks-image-url').value=url||'';
+  g('eks-image-input').value='';
+  const img=g('eks-image-preview'), ph=g('eks-image-ph');
+  if (url) { img.src=url; img.style.display='block'; ph.style.display='none'; }
+  else { img.src=''; img.style.display='none'; ph.style.display='block'; }
+}
+
+async function uploadImageFile() {
+  const input=g('eks-image-input');
+  if (!input.files.length) return g('eks-image-url').value;
+  const fd=new FormData(); fd.append('file',input.files[0]);
+  const r=await fetch(`${API}/api/admin/upload`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});
+  if (!r.ok) throw new Error((await r.json()).detail||'Rasm yuklanmadi');
+  return (await r.json()).url;
+}
+
+// ── EKSPONAT MODAL ────────────────────────────────────────────
+async function openEksponatModal() {
+  g('eks-id').value=''; g('eks-modal-title').textContent="Eksponat qo'shish"; g('eks-save-txt').textContent='Saqlash';
+  setImagePreview('');
+  g('eks-tartib').value='0';
+  ['name-uz','name-ru','name-en','era-uz','era-ru','era-en','date-uz','date-ru','date-en','text-uz','text-ru','text-en'].forEach(k=>g('eks-'+k).value='');
+  await populateEksBolimSelect('','');
+  openModal('eks-modal');
+}
+
+async function editEksponat(id) {
+  const e=eksponatlarData.find(x=>x.id===id); if (!e) return;
+  g('eks-id').value=id; g('eks-modal-title').textContent="Eksponatni tahrirlash"; g('eks-save-txt').textContent='Yangilash';
+  setImagePreview(e.image_url||'');
+  g('eks-tartib').value=e.tartib??0;
+  g('eks-name-uz').value=e.name?.uz||''; g('eks-name-ru').value=e.name?.ru||''; g('eks-name-en').value=e.name?.en||'';
+  g('eks-era-uz').value =e.era?.uz||'';  g('eks-era-ru').value =e.era?.ru||'';  g('eks-era-en').value =e.era?.en||'';
+  g('eks-date-uz').value=e.date?.uz||''; g('eks-date-ru').value=e.date?.ru||''; g('eks-date-en').value=e.date?.en||'';
+  g('eks-text-uz').value=e.text?.uz||''; g('eks-text-ru').value=e.text?.ru||''; g('eks-text-en').value=e.text?.en||'';
+  await populateEksBolimSelect(e.bolim_id, e.vitrina_id);
+  openModal('eks-modal');
+}
+
+async function populateEksBolimSelect(selBolim, selVitrina) {
+  const bSel=g('eks-bolim');
+  bSel.innerHTML="<option value=''>— tanlang —</option>";
+  if (!bolimlarData.length) { const r=await fetch(`${API}/api/admin/bolimlar`,{headers:authH()}); bolimlarData=await r.json(); }
+  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;if(String(b.id)===String(selBolim))o.selected=true;bSel.appendChild(o);});
+  await loadVitrinaForEks(selVitrina);
+}
+
+async function loadVitrinaForEks(selVitrina='') {
+  const bolimId=gv('eks-bolim');
+  const vSel=g('eks-vitrina');
+  vSel.innerHTML="<option value=''>— tanlang —</option>";
+  if (!bolimId) return;
+  if (!vitrinalarData.length) { const r=await fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}); vitrinalarData=await r.json(); }
+  vitrinalarData.filter(v=>String(v.bolim_id)===String(bolimId)).forEach(v=>{
+    const o=document.createElement('option');o.value=v.id;o.textContent=`${v.nomi?.uz||"Vitrina"} (#${v.id})`;if(String(v.id)===String(selVitrina))o.selected=true;vSel.appendChild(o);
+  });
+}
+
+async function saveEksponat() {
+  const id=g('eks-id').value;
+  const bolimId=gv('eks-bolim'), vitrinaId=gv('eks-vitrina'), nameUz=gv('eks-name-uz'), textUz=gv('eks-text-uz');
+  if (!bolimId)    { toast("Bo'limni tanlang",'error'); return; }
+  if (!vitrinaId)  { toast("Vitrinani tanlang",'error'); return; }
+  if (!nameUz)     { toast("Eksponat nomini kiriting (UZ)",'error'); return; }
+  if (!textUz)     { toast("UZ tildagi matni kiriting",'error'); return; }
+
+  const btn=g('eks-save-txt'); btn.innerHTML='<span class="loading"></span>';
+  try {
+    // 1. Upload image if new one selected
+    let imageUrl = g('eks-image-url').value;
+    if (g('eks-image-input').files.length) {
+      imageUrl = await uploadImageFile();
+      g('eks-image-url').value = imageUrl;
+    }
+    if (!id && !imageUrl) { toast("Rasm yuklang",'error'); btn.textContent='Saqlash'; return; }
+
+    // 2. Save exhibit
+    const body={
+      vitrina_id:parseInt(vitrinaId), bolim_id:parseInt(bolimId),
+      image_url: imageUrl,
+      era: {uz:gv('eks-era-uz'),  ru:gv('eks-era-ru'),  en:gv('eks-era-en')},
+      name:{uz:nameUz,            ru:gv('eks-name-ru'), en:gv('eks-name-en')},
+      date:{uz:gv('eks-date-uz'), ru:gv('eks-date-ru'), en:gv('eks-date-en')},
+      text:{uz:textUz,            ru:gv('eks-text-ru'), en:gv('eks-text-en')},
+      tartib:parseInt(gv('eks-tartib'))||0,
+    };
+    const url=id?`${API}/api/admin/eksponatlar/${id}`:`${API}/api/admin/eksponatlar`;
+    const r=await fetch(url,{method:id?'PUT':'POST',headers:authH(),body:JSON.stringify(body)});
+    if (!r.ok) throw new Error((await r.json()).detail||'Xato');
+    closeModal('eks-modal'); toast(id?'Eksponat yangilandi':"Eksponat qo'shildi",'success'); loadEksponatlar();
+  } catch(e) { toast(e.message,'error'); }
+  finally { btn.textContent=id?'Yangilash':'Saqlash'; }
+}
+
+// ── SEVIMLILAR ────────────────────────────────────────────────
+async function loadLikes() {
+  const tbody = g('likes-body');
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px"><span class="loading"></span></td></tr>`;
+  try {
+    const r = await fetch(`${API}/api/admin/likes`, {headers:authH()});
+    if (r.status===401) { doLogout(); return; }
+    const list = await r.json();
+    if (!list.length) {
+      tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">❤️</div><h3>Hali yoqtirishlar yo'q</h3><p>Tashrif buyuruvchilar eksponatlarni yoqtirganda bu yerda ko'rinadi</p></div></td></tr>`;
+      return;
+    }
+    const maxLikes = list[0].likes || 1;
+    tbody.innerHTML = list.map((e, i) => {
+      const pct = Math.round(e.likes / maxLikes * 100);
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      return `<tr>
+        <td><span style="font-size:1.1rem">${medal || `<span class="badge badge-gray">${i+1}</span>`}</span></td>
+        <td>${e.image_url
+          ? `<img class="thumb-img" src="${esc(e.image_url)}" />`
+          : `<div class="thumb-empty">🏺</div>`}</td>
+        <td><strong>${esc(e.name?.uz||'—')}</strong></td>
+        <td><span class="badge badge-orange" style="font-size:0.7rem">${esc(e.era?.uz||'—')}</span></td>
+        <td><span style="font-size:1.1rem;font-weight:700;color:#ff4d6d">❤️ ${e.likes}</span></td>
+        <td style="min-width:120px">
+          <div style="background:var(--surface2);border-radius:20px;height:8px;overflow:hidden">
+            <div style="height:100%;border-radius:20px;background:linear-gradient(90deg,#ff4d6d,#ff8fa3);width:${pct}%;transition:width 0.5s"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML=`<tr><td colspan="6" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+}
+
+// ── CACHE ─────────────────────────────────────────────────────
+let _cacheEntries = [];
+const _lName = {uz:"O'zbek", ru:'Русский', en:'English'};
+const _lFlag  = {uz:'🇺🇿',   ru:'🇷🇺',     en:'🇬🇧'};
+
+async function loadCache() {
+  const tbody = g('cache-tbody');
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px"><span class="loading"></span></td></tr>`;
+  try {
+    const r = await fetch(`${API}/api/admin/cache`, {headers:authH()});
+    if (!r.ok) throw new Error('Cache yuklanmadi');
+    const d = await r.json();
+    _cacheEntries = d.entries || [];
+    filterCache();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+function filterCache() {
+  const search = (g('cache-search')?.value || '').trim().toLowerCase();
+  const lang   =  g('cache-lang-filter')?.value   || '';
+  const status =  g('cache-status-filter')?.value  || '';
+
+  let list = _cacheEntries;
+  if (search) list = list.filter(e => (e.ex_name||'').toLowerCase().includes(search) || e.ex_id.includes(search));
+  if (lang)   list = list.filter(e => e.lang === lang);
+  if (status === 'ready')   list = list.filter(e =>  e.url);
+  if (status === 'missing') list = list.filter(e => !e.url);
+
+  g('cache-count-text').textContent = `${list.length} ta yozuv`;
+  const tbody = g('cache-tbody');
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="icon">🔊</div><h3>Hech narsa topilmadi</h3></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(e => `
+    <tr>
+      <td><span class="cache-dot ${e.url?'hit':'miss'}" style="display:inline-block"></span></td>
+      <td>
+        <div style="font-weight:600;font-size:0.875rem">${esc(e.ex_name||'—')}</div>
+        <div style="font-size:0.75rem;color:var(--muted)">#${esc(e.ex_id)} · ${esc(e.ex_era||'')}</div>
+      </td>
+      <td><span style="font-size:1.1rem">${_lFlag[e.lang]||''}</span> ${esc(_lName[e.lang]||e.lang)}</td>
+      <td>${e.url
+        ? `<span class="badge badge-blue" style="font-size:0.72rem">✓ Tayyor</span>`
+        : `<span class="badge badge-gray" style="font-size:0.72rem">✗ Yo'q</span>`}
+      </td>
+      <td>${e.url
+        ? `<audio controls src="${esc(e.url)}" style="height:28px;width:180px;accent-color:var(--accent)"></audio>`
+        : `<span style="color:var(--muted);font-size:0.8rem">—</span>`}
+      </td>
+    </tr>`).join('');
+}
+let _warmPoll = null;
+
+async function warmCache() {
+  toast('Warm-up boshlandi...','success');
+  try {
+    const r = await fetch(`${API}/api/cache/warm`, {method:'POST', headers:authH()});
+    if (!r.ok) throw new Error((await r.json()).detail||'Xato');
+    // Progress ni har 3 soniyada yangilab turish
+    if (_warmPoll) clearInterval(_warmPoll);
+    _warmPoll = setInterval(async () => {
+      try {
+        const rs = await fetch(`${API}/api/admin/stats`, {headers:authH()});
+        if (!rs.ok) { clearInterval(_warmPoll); _warmPoll=null; return; }
+        const d = await rs.json();
+        const total  = (d.eksponatlar||0) * 3;
+        const cached = d.audio_cache || 0;
+        const pct    = total > 0 ? Math.round(cached/total*100) : 0;
+        g('stat-cache').textContent            = cached;
+        g('cache-progress-bar').style.width    = pct + '%';
+        g('cache-progress-text').textContent   = `${cached} / ${total}`;
+        g('cache-meta-text').textContent       = `${pct}% tayyor (yangilanmoqda...)`;
+        if (pct >= 100 || cached >= total) {
+          clearInterval(_warmPoll); _warmPoll = null;
+          g('cache-meta-text').textContent = '✓ Barcha audiolar tayyor!';
+          toast("Audio cache to'liq tayyor!", 'success');
+        }
+      } catch { clearInterval(_warmPoll); _warmPoll = null; }
+    }, 3000);
+  } catch(e) { toast(e.message, 'error'); }
+}
+async function clearCache() {
+  if (!confirm("Audio cache ni tozalashni xohlaysizmi?")) return;
+  try { const r=await fetch(`${API}/api/admin/cache`,{method:'DELETE',headers:authH()}); if(!r.ok) throw new Error('Xato'); toast('Cache tozalandi','success'); loadCache(); } catch(e) { toast(e.message,'error'); }
+}
+
+// ── DELETE ────────────────────────────────────────────────────
+function confirmDelete(type,id) {
+  const msgs={bolim:`#${id} bo'limni o'chirmoqchimisiz?`,vitrina:`#${id} vitrinani o'chirmoqchimisiz?`,eksponat:`#${id} eksponatni o'chirmoqchimisiz? Audio cache ham o'chiriladi.`};
+  g('del-msg').textContent=msgs[type]||"O'chirmoqchimisiz?";
+  g('del-confirm-btn').onclick=()=>doDelete(type,id);
+  openModal('del-modal');
+}
+async function doDelete(type,id) {
+  const urls={bolim:`/api/admin/bolimlar/${id}`,vitrina:`/api/admin/vitrinalar/${id}`,eksponat:`/api/admin/eksponatlar/${id}`};
+  try {
+    const r=await fetch(API+urls[type],{method:'DELETE',headers:authH()});
+    if (!r.ok) throw new Error((await r.json()).detail||'Xato');
+    closeModal('del-modal'); toast("O'chirildi",'success');
+    if(type==='bolim') loadBolimlar(); else if(type==='vitrina') loadVitrinalar(); else loadEksponatlar();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────
+function openModal(id)  { g(id).classList.add('open'); }
+function closeModal(id) { g(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{ m.addEventListener('click',e=>{if(e.target===m) closeModal(m.id);}); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id)); });
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg,type='success') {
+  const t=document.createElement('div'); t.className=`toast ${type}`;
+  t.innerHTML=`<span>${type==='success'?'✅':'❌'}</span><span>${esc(msg)}</span>`;
+  g('toasts').appendChild(t); setTimeout(()=>t.remove(),3500);
+}
+
+// ── QR CODE ───────────────────────────────────────────────────
+function showQR(vitrinaId, vitrinaName) {
+  if (typeof QRCode === 'undefined') {
+    toast("QR kutubxonasi yuklanmadi. Internet aloqasini tekshiring.", 'error');
+    return;
+  }
+  const url = `${location.origin}/?vitrina=${vitrinaId}`;
+  g('qr-modal-title').textContent = `QR — ${vitrinaName || 'Vitrina #'+vitrinaId}`;
+  g('qr-url-text').textContent = url;
+  const box = g('qr-code-box');
+  box.innerHTML = '';
+  try {
+    new QRCode(box, {
+      text: url,
+      width: 220, height: 220,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+    openModal('qr-modal');
+  } catch(e) {
+    toast('QR generatsiya xatosi: ' + e.message, 'error');
+  }
+}
+function downloadQR() {
+  const canvas = g('qr-code-box').querySelector('canvas');
+  if (!canvas) { toast("QR yuklanmadi, qayta urining", 'error'); return; }
+  const a = document.createElement('a');
+  const name = g('qr-modal-title').textContent.replace(/[^a-zA-Z0-9\-]/g,'_');
+  a.download = `${name}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('QR rasm yuklandi','success');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function g(id)  { return document.getElementById(id); }
+function gv(id) { return (g(id)?.value||'').trim(); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

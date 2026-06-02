@@ -1,0 +1,28 @@
+# ── Environment ──────────────────────────────────────
+.env
+!.env.example
+
+# ── Python ───────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# ── Runtime data (production serverda saqlanadi) ─────
+# git pull qilganda real ma'lumotlar o'chirilmasin
+backend/data/bolimlar.json
+backend/data/vitrinas.json
+backend/data/eksponatlar.json
+backend/data/likes.json
+backend/data/visits.json
+backend/audio_cache.json
+
+# ── User uploads (binary fayllar) ────────────────────
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db

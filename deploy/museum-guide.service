@@ -1,0 +1,14 @@
+[Unit]
+Description=Museum Audio Guide Backend
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/museum-guide/backend
+ExecStart=/usr/local/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+EnvironmentFile=/var/www/museum-guide/backend/.env
+
+[Install]
+WantedBy=multi-user.target
