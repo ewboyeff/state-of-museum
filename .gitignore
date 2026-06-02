@@ -10,11 +10,12 @@ __pycache__/
 venv/
 *.egg-info/
 
-# ── Runtime data (production serverda saqlanadi) ─────
-# git pull qilganda real ma'lumotlar o'chirilmasin
-backend/data/bolimlar.json
-backend/data/vitrinas.json
-backend/data/eksponatlar.json
+# ── Muzey kontent ma'lumotlari (gitda saqlanadi) ──────
+# bolimlar.json, vitrinas.json, eksponatlar.json — gitga kiradi
+# Lokal qo'shilgan ma'lumot push qilinganda serverga ham boradi
+
+# ── Foydalanuvchi statistikasi (gitda saqlanmaydi) ────
+# Serverda to'planadi, har deploy da o'chirilmasin
 backend/data/likes.json
 backend/data/visits.json
 backend/audio_cache.json
