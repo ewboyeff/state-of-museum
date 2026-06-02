@@ -1443,23 +1443,55 @@ function handleQR(data) {
   el('scanner-hint').textContent = '✓ QR topildi!';
   el('scanner-hint').classList.add('detected');
 
-  // parse exhibit id from URL param ?exhibit=N or bare number
-  let exhibitId = null;
+  let exhibitId  = null;
+  let scannedVitrina = null;
   try {
-    const url    = new URL(data);
-    exhibitId    = parseInt(url.searchParams.get('exhibit'));
+    const url = new URL(data);
+    const ex  = parseInt(url.searchParams.get('exhibit'));
+    const vit = parseInt(url.searchParams.get('vitrina'));
+    if (!isNaN(ex)  && ex)  exhibitId      = ex;
+    if (!isNaN(vit) && vit) scannedVitrina = vit;
   } catch {
     const bare = parseInt(data);
     if (!isNaN(bare)) exhibitId = bare;
   }
 
-  setTimeout(() => {
+  setTimeout(async () => {
     closeScanner();
+
+    // To'g'ridan eksponatga o'tish
     if (exhibitId) {
       const idx = exhibits.findIndex(e => e.id === exhibitId);
       if (idx !== -1) { openExhibit(exhibits[idx], idx); return; }
     }
-    // unknown QR — go to exhibit list
+
+    // Vitrina QR — o'sha vitrinaning eksponatlarini yukla
+    if (scannedVitrina) {
+      try {
+        const r = await fetch(`${API_BASE}/api/exhibits?vitrina_id=${scannedVitrina}`);
+        exhibits = await r.json();
+        try { localStorage.setItem(OFFLINE_KEY(scannedVitrina), JSON.stringify(exhibits)); } catch {}
+      } catch {
+        try {
+          const c = localStorage.getItem(OFFLINE_KEY(scannedVitrina));
+          if (c) exhibits = JSON.parse(c);
+        } catch {}
+      }
+      // Vitrina nomini olish
+      try {
+        const rv = await fetch(`${API_BASE}/api/vitrina/${scannedVitrina}`);
+        if (rv.ok) vitrinaInfo = await rv.json();
+      } catch {}
+      // Sarlavhani yangilash
+      const u = UI[lang];
+      const ttl = vitrinaInfo ? (vitrinaInfo.nomi?.[lang] || vitrinaInfo.nomi?.uz || u.ttl) : u.ttl;
+      el('s3-ttl').textContent = ttl;
+      el('s3-sub').textContent = u.ttl;
+      renderList();
+      go('screen3');
+      return;
+    }
+
     go('screen3');
   }, 600);
 }
