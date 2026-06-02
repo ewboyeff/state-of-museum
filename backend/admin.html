@@ -403,7 +403,8 @@ select option { background:var(--surface2); color:var(--text); }
 <!-- MODAL: Vitrina -->
 <div class="modal-overlay" id="vitrina-modal">
   <div class="modal">
-    <div class="modal-head"><h3>Vitrina qo'shish</h3><button class="modal-close" onclick="closeModal('vitrina-modal')">✕</button></div>
+    <div class="modal-head"><h3 id="vitrina-modal-title">Vitrina qo'shish</h3><button class="modal-close" onclick="closeModal('vitrina-modal')">✕</button></div>
+    <input type="hidden" id="vitrina-id" />
     <div class="modal-body">
       <div class="field-group"><label>Bo'lim *</label><select id="vitrina-bolim"><option value="">— Bo'limni tanlang —</option></select></div>
       <div class="form-row">
@@ -415,7 +416,7 @@ select option { background:var(--surface2); color:var(--text); }
     </div>
     <div class="modal-foot">
       <button class="btn btn-secondary" onclick="closeModal('vitrina-modal')">Bekor</button>
-      <button class="btn btn-primary" onclick="saveVitrina()">Saqlash</button>
+      <button class="btn btn-primary" onclick="saveVitrina()"><span id="vitrina-save-txt">Saqlash</span></button>
     </div>
   </div>
 </div>
@@ -711,30 +712,55 @@ async function loadVitrinalar() {
         <td style="font-size:0.82rem;color:var(--muted)">${esc(v.joy||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:6px"><a class="qr-link" href="${esc(qrUrl)}" target="_blank">?vitrina=${v.id}</a><button class="btn btn-secondary btn-sm" onclick="copyQR('${esc(qrUrl)}')">📋</button></div></td>
         <td><div class="actions">
+          <button class="btn btn-sm btn-edit" onclick="editVitrina(${v.id})">✏️</button>
           <button class="btn btn-sm btn-edit" onclick="showQR(${v.id},'${esc(v.nomi?.uz||'')}')">🔲 QR</button>
-          <button class="btn btn-sm btn-del" onclick="confirmDelete('vitrina',${v.id})">🗑️</button>
+          <button class="btn btn-sm btn-del"  onclick="confirmDelete('vitrina',${v.id})">🗑️</button>
         </div></td>
       </tr>`;
     }).join('');
   } catch(e) { tbody.innerHTML=`<tr><td colspan="6" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
 }
 function copyQR(url) { navigator.clipboard.writeText(url).then(()=>toast('Nusxalandi','success')).catch(()=>{}); }
-async function openVitrinaModal() {
+async function _fillVitrinaModal(selBolimId='') {
   const sel=g('vitrina-bolim'); sel.innerHTML="<option value=''>— Bo'limni tanlang —</option>";
   if (!bolimlarData.length) { const r=await fetch(`${API}/api/admin/bolimlar`,{headers:authH()}); bolimlarData=await r.json(); }
-  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;sel.appendChild(o);});
+  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;if(String(b.id)===String(selBolimId))o.selected=true;sel.appendChild(o);});
+}
+async function openVitrinaModal() {
+  g('vitrina-id').value='';
+  g('vitrina-modal-title').textContent="Vitrina qo'shish";
+  g('vitrina-save-txt').textContent='Saqlash';
   ['nomi-uz','nomi-ru','nomi-en','joy'].forEach(k=>g('vitrina-'+k).value='');
+  await _fillVitrinaModal();
+  openModal('vitrina-modal');
+}
+async function editVitrina(id) {
+  const v=vitrinalarData.find(x=>x.id===id); if(!v) return;
+  g('vitrina-id').value=id;
+  g('vitrina-modal-title').textContent='Vitrinani tahrirlash';
+  g('vitrina-save-txt').textContent='Yangilash';
+  await _fillVitrinaModal(v.bolim_id);
+  g('vitrina-nomi-uz').value=v.nomi?.uz||'';
+  g('vitrina-nomi-ru').value=v.nomi?.ru||'';
+  g('vitrina-nomi-en').value=v.nomi?.en||'';
+  g('vitrina-joy').value=v.joy||'';
   openModal('vitrina-modal');
 }
 async function saveVitrina() {
-  if (!gv('vitrina-bolim'))    { toast("Bo'limni tanlang",'error'); return; }
-  if (!gv('vitrina-nomi-uz'))  { toast("Vitrina nomini kiriting",'error'); return; }
+  const id=g('vitrina-id').value;
+  if (!gv('vitrina-bolim'))   { toast("Bo'limni tanlang",'error'); return; }
+  if (!gv('vitrina-nomi-uz')) { toast("Vitrina nomini kiriting",'error'); return; }
   const body={bolim_id:parseInt(gv('vitrina-bolim')),nomi:{uz:gv('vitrina-nomi-uz'),ru:gv('vitrina-nomi-ru'),en:gv('vitrina-nomi-en')},joy:gv('vitrina-joy')};
+  const btn=g('vitrina-save-txt'); btn.innerHTML='<span class="loading"></span>';
   try {
-    const r=await fetch(`${API}/api/admin/vitrinalar`,{method:'POST',headers:authH(),body:JSON.stringify(body)});
+    const url=id?`${API}/api/admin/vitrinalar/${id}`:`${API}/api/admin/vitrinalar`;
+    const r=await fetch(url,{method:id?'PUT':'POST',headers:authH(),body:JSON.stringify(body)});
     if (!r.ok) throw new Error((await r.json()).detail||'Xato');
-    closeModal('vitrina-modal'); toast("Vitrina qo'shildi",'success'); loadVitrinalar();
+    closeModal('vitrina-modal');
+    toast(id?'Vitrina yangilandi':"Vitrina qo'shildi",'success');
+    loadVitrinalar();
   } catch(e) { toast(e.message,'error'); }
+  finally { btn.textContent=id?'Yangilash':'Saqlash'; }
 }
 
 // ── EKSPONATLAR ───────────────────────────────────────────────

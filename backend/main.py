@@ -650,6 +650,19 @@ def create_vitrina(body: VitrinaRequest, _=Depends(require_admin)):
     _save_json(VITRINAS_FILE, vitrinas_db)
     return vitrina
 
+@app.put("/api/admin/vitrinalar/{vitrina_id}")
+def update_vitrina(vitrina_id: int, body: VitrinaRequest, _=Depends(require_admin)):
+    for i, v in enumerate(vitrinas_db):
+        if v["id"] == vitrina_id:
+            vitrinas_db[i].update({
+                "bolim_id": body.bolim_id,
+                "nomi": {"uz": body.nomi.uz, "ru": body.nomi.ru, "en": body.nomi.en},
+                "joy": body.joy,
+            })
+            _save_json(VITRINAS_FILE, vitrinas_db)
+            return vitrinas_db[i]
+    raise HTTPException(404, "Vitrina topilmadi")
+
 @app.delete("/api/admin/vitrinalar/{vitrina_id}")
 def delete_vitrina(vitrina_id: int, _=Depends(require_admin)):
     global vitrinas_db
