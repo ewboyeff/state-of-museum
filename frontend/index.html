@@ -957,7 +957,7 @@ const UI = {
 function go(targetId, back = false) {
   stopAudio();
   const cur = document.querySelector('.screen.active');
-  if (cur) {
+  if (cur && cur.id !== targetId) {
     cur.classList.add('exit-left');
     setTimeout(() => cur.classList.remove('active', 'exit-left'), 250);
   }
