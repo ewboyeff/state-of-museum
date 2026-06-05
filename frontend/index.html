@@ -1225,8 +1225,6 @@ function togglePause() {
     aud.play();
     playing = true;
     el('pause-btn').textContent = '⏸';
-    // waveform animatsiyasini qayta ishga tushirish
-    document.querySelectorAll('.wvbar.lit').forEach(b => {});
   } else {
     aud.pause();
     playing = false;
@@ -1303,11 +1301,11 @@ function buildKaraoke() {
 
 function updateKaraoke(pct) {
   if (!_karaokeWords) return;
-  const litCount = Math.floor(pct / 100 * _karaokeWords);
+  const litCount = Math.round(pct / 100 * _karaokeWords);
   const spans = el('d-desc').querySelectorAll('.kword');
   spans.forEach((s, i) => {
-    s.classList.toggle('klit', i < litCount - 1);
-    s.classList.toggle('kcur', i === litCount - 1);
+    s.classList.toggle('klit', i < litCount);
+    s.classList.toggle('kcur', i === litCount);
   });
 }
 
@@ -1466,8 +1464,17 @@ function handleQR(data) {
 
     // To'g'ridan eksponatga o'tish
     if (exhibitId) {
-      const idx = exhibits.findIndex(e => e.id === exhibitId);
+      let idx = exhibits.findIndex(e => e.id === exhibitId);
       if (idx !== -1) { openExhibit(exhibits[idx], idx); return; }
+      // Hozirgi ro'yxatda yo'q — barcha eksponatlardan qidirish
+      try {
+        const r = await fetch(`${API_BASE}/api/exhibits`);
+        if (r.ok) {
+          const all = await r.json();
+          idx = all.findIndex(e => e.id === exhibitId);
+          if (idx !== -1) { exhibits = all; renderList(); openExhibit(all[idx], idx); return; }
+        }
+      } catch {}
     }
 
     // Vitrina QR — o'sha vitrinaning eksponatlarini yukla

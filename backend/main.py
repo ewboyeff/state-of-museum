@@ -226,13 +226,13 @@ def get_config():
 
 @app.get("/api/exhibits")
 def get_exhibits(vitrina_id: Optional[int] = None):
-    # real data bor bo'lsa undan, yo'q bo'lsa demo EXHIBITS (vitrina filtersiz)
     if eksponatlar_db:
         active = eksponatlar_db
         if vitrina_id:
             active = [e for e in active if e.get("vitrina_id") == vitrina_id]
+        active = sorted(active, key=lambda e: e.get("tartib", 0))
     else:
-        active = EXHIBITS  # demo: vitrina filter ishlamaydi, lekin hech bo'lmasa ko'rinadi
+        active = EXHIBITS
     return [{**ex, "likes": likes_db.get(str(ex["id"]), 0)} for ex in active]
 
 @app.post("/api/exhibits/{exhibit_id}/like")
@@ -307,8 +307,8 @@ async def text_to_speech(body: TTSRequest):
             )
             if response.status_code != 429:
                 break
-            print(f"Rate limited (attempt {attempt + 1}), retrying in 2s...")
-            await asyncio.sleep(2)
+            print(f"Rate limited (attempt {attempt + 1}), retrying in {2 ** attempt}s...")
+            await asyncio.sleep(2 ** attempt)
 
     if response.status_code not in (200, 201):
         try:
