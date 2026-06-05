@@ -1003,7 +1003,8 @@ async function loadExhibits() {
       ? `${API_BASE}/api/exhibits?vitrina_id=${urlVitrinaId}`
       : `${API_BASE}/api/exhibits`;
     const r = await fetch(url);
-    exhibits = await r.json();
+    const data = await r.json();
+    exhibits = Array.isArray(data) ? data : [];
     // Offline uchun saqlash
     try { localStorage.setItem(cacheKey, JSON.stringify(exhibits)); } catch {}
   } catch {
@@ -1468,7 +1469,8 @@ function handleQR(data) {
       try {
         const r = await fetch(`${API_BASE}/api/exhibits`);
         if (r.ok) {
-          const all = await r.json();
+          const data = await r.json();
+          const all = Array.isArray(data) ? data : [];
           idx = all.findIndex(e => e.id === exhibitId);
           if (idx !== -1) { openExhibit(all[idx], idx); return; }
         }
@@ -1478,6 +1480,7 @@ function handleQR(data) {
     // Vitrina QR — o'sha vitrinaning eksponatlarini yukla
     if (scannedVitrina) {
       showVtLoader();
+      vitrinaInfo = null;
       const t0 = Date.now();
 
       try {
