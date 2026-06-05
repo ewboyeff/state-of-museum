@@ -73,83 +73,6 @@
     }
 
     /* ═══════════════════════════════════════════════════
-       SCREEN 1 — WELCOME / QR
-    ══════════════════════════════════════════════════ */
-    #screen1 {
-      justify-content: space-between;
-      padding: 64px 28px 48px;
-      background:
-        radial-gradient(ellipse 100% 50% at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 70%),
-        linear-gradient(180deg, #1a1208 0%, #0d0a06 60%);
-    }
-
-    .s1-header { text-align: center; }
-    .s1-logo   { font-size: 52px; display: block; margin-bottom: 14px; filter: drop-shadow(0 0 20px rgba(201,168,76,0.45)); }
-    .s1-brand  { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; letter-spacing: 0.1em; color: var(--gold); }
-    .s1-badge  { font-size: 10px; letter-spacing: 0.25em; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
-
-    .s1-body   { text-align: center; }
-    .s1-desc {
-      font-size: 15px;
-      line-height: 1.65;
-      color: #c0a870;
-      margin-bottom: 36px;
-      padding: 0 8px;
-    }
-
-    /* QR frame */
-    .qr-wrap {
-      width: 172px; height: 172px;
-      margin: 0 auto 8px;
-      position: relative;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .qr-corner {
-      position: absolute;
-      width: 22px; height: 22px;
-      border: 3px solid var(--gold);
-    }
-    .qr-corner.tl { top:0; left:0;  border-right:0; border-bottom:0; }
-    .qr-corner.tr { top:0; right:0; border-left:0;  border-bottom:0; }
-    .qr-corner.bl { bottom:0; left:0;  border-right:0; border-top:0; }
-    .qr-corner.br { bottom:0; right:0; border-left:0;  border-top:0; }
-    .qr-icon { font-size: 72px; opacity: 0.45; }
-
-    .s1-footer {}
-
-    .btn-primary {
-      width: 100%;
-      padding: 17px;
-      background: var(--gold);
-      color: #0d0a06;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 15px;
-      font-weight: 700;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      letter-spacing: 0.03em;
-      margin-bottom: 10px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .btn-primary:active { transform: scale(0.98); background: var(--gold-light); }
-
-    .btn-ghost {
-      width: 100%;
-      padding: 15px;
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid rgba(201,168,76,0.18);
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .btn-ghost:active { border-color: var(--gold-border); color: var(--text); }
-
-    /* ═══════════════════════════════════════════════════
        SCREEN 2 — LANGUAGE
     ══════════════════════════════════════════════════ */
     #screen2 {
@@ -1027,6 +950,10 @@ const UI = {
 ───────────────────────────────────────────────────── */
 function go(targetId, back = false) {
   stopAudio();
+  // Til ekraniga qaytganda — QR orqali o'rnatilgan vitrinaInfo ni tozalash
+  if (targetId === 'screen2' && !urlVitrinaId) {
+    vitrinaInfo = null;
+  }
   const cur = document.querySelector('.screen.active');
   if (cur && cur.id !== targetId) {
     cur.classList.add('exit-left');
@@ -1537,13 +1464,13 @@ function handleQR(data) {
     if (exhibitId) {
       let idx = exhibits.findIndex(e => e.id === exhibitId);
       if (idx !== -1) { openExhibit(exhibits[idx], idx); return; }
-      // Hozirgi ro'yxatda yo'q — barcha eksponatlardan qidirish
+      // Hozirgi ro'yxatda yo'q — barcha eksponatlardan qidirish (ro'yxatni almashtirmasdan)
       try {
         const r = await fetch(`${API_BASE}/api/exhibits`);
         if (r.ok) {
           const all = await r.json();
           idx = all.findIndex(e => e.id === exhibitId);
-          if (idx !== -1) { exhibits = all; renderList(); openExhibit(all[idx], idx); return; }
+          if (idx !== -1) { openExhibit(all[idx], idx); return; }
         }
       } catch {}
     }

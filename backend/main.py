@@ -45,7 +45,9 @@ _like_rate: dict = defaultdict(list)
 def _check_like_rate(ip: str) -> bool:
     now = time.time()
     _like_rate[ip] = [t for t in _like_rate[ip] if now - t < 60]
-    if len(_like_rate[ip]) >= 10:
+    if not _like_rate[ip]:
+        _like_rate.pop(ip, None)
+    if len(_like_rate.get(ip, [])) >= 10:
         return False
     _like_rate[ip].append(now)
     return True
@@ -550,22 +552,23 @@ def admin_stats(_=Depends(require_admin)):
 @app.get("/api/admin/cache")
 def admin_cache_list(_=Depends(require_admin)):
     active = eksponatlar_db if eksponatlar_db else EXHIBITS
-    ex_map = {str(e["id"]): e for e in active}
+    lang_order = {"uz": 0, "ru": 1, "en": 2}
     entries = []
-    for k, v in audio_cache.items():
-        parts = k.rsplit("_", 1)
-        ex_id  = parts[0] if len(parts) == 2 else k
-        lang   = parts[1] if len(parts) == 2 else ""
-        ex     = ex_map.get(ex_id, {})
-        entries.append({
-            "key":      k,
-            "url":      v,
-            "lang":     lang,
-            "ex_id":    ex_id,
-            "ex_name":  ex.get("name", {}).get("uz") or ex.get("name", {}).get("ru") or f"#{ex_id}",
-            "ex_era":   ex.get("era",  {}).get("uz", ""),
-        })
-    entries.sort(key=lambda e: (int(e["ex_id"]) if e["ex_id"].isdigit() else 0, e["lang"]))
+    for ex in active:
+        ex_id = str(ex["id"])
+        ex_name = ex.get("name", {}).get("uz") or ex.get("name", {}).get("ru") or f"#{ex_id}"
+        ex_era  = ex.get("era", {}).get("uz", "")
+        for lang in ("uz", "ru", "en"):
+            key = f"{ex_id}_{lang}"
+            entries.append({
+                "key":     key,
+                "url":     audio_cache.get(key, ""),
+                "lang":    lang,
+                "ex_id":   ex_id,
+                "ex_name": ex_name,
+                "ex_era":  ex_era,
+            })
+    entries.sort(key=lambda e: (int(e["ex_id"]) if e["ex_id"].isdigit() else 0, lang_order.get(e["lang"], 9)))
     return {"count": len(entries), "entries": entries}
 
 @app.delete("/api/admin/cache")
