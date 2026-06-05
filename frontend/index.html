@@ -536,6 +536,70 @@
     .fab-scan:active  { transform: translateX(-50%) scale(0.96); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
     .fab-scan .fab-icon { font-size: 18px; }
 
+    /* ── Vitrina transition loader ─────────────────── */
+    .vt-loader {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .vt-loader.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .vt-ring {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 3px solid rgba(201,168,76,0.15);
+      border-top-color: var(--gold);
+      animation: vt-spin 0.9s linear infinite;
+      position: relative;
+    }
+    .vt-ring::after {
+      content: '🏛';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      animation: vt-spin-rev 0.9s linear infinite;
+    }
+    @keyframes vt-spin     { to { transform: rotate(360deg); } }
+    @keyframes vt-spin-rev { to { transform: rotate(-360deg); } }
+    .vt-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .vt-dots span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: vt-pulse 1.2s ease-in-out infinite;
+    }
+    .vt-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .vt-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes vt-pulse {
+      0%,100% { opacity: 0.2; transform: scale(0.8); }
+      50%      { opacity: 1;   transform: scale(1.2); }
+    }
+    .vt-text {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
     /* ── Scanner overlay ───────────────────────────── */
     .scanner-overlay {
       position: absolute;
@@ -906,6 +970,13 @@
       <div class="sf-line"></div>
     </div>
     <p class="scanner-hint" id="scanner-hint">QR kodni ramka ichiga yo'naltiring</p>
+  </div>
+
+  <!-- Vitrina transition loader -->
+  <div id="vt-loader" class="vt-loader">
+    <div class="vt-ring"></div>
+    <div class="vt-dots"><span></span><span></span><span></span></div>
+    <div class="vt-text" id="vt-text">Yuklanmoqda</div>
   </div>
 
   <!-- Floating scan button (visible on screen4) -->
@@ -1479,6 +1550,9 @@ function handleQR(data) {
 
     // Vitrina QR — o'sha vitrinaning eksponatlarini yukla
     if (scannedVitrina) {
+      showVtLoader();
+      const t0 = Date.now();
+
       try {
         const r = await fetch(`${API_BASE}/api/exhibits?vitrina_id=${scannedVitrina}`);
         exhibits = await r.json();
@@ -1494,6 +1568,12 @@ function handleQR(data) {
         const rv = await fetch(`${API_BASE}/api/vitrina/${scannedVitrina}`);
         if (rv.ok) vitrinaInfo = await rv.json();
       } catch {}
+
+      // Kamida 2 soniya loader ko'rinsin
+      const elapsed = Date.now() - t0;
+      if (elapsed < 2000) await new Promise(r => setTimeout(r, 2000 - elapsed));
+
+      hideVtLoader();
       // Sarlavhani yangilash
       const u = UI[lang];
       const ttl = vitrinaInfo ? (vitrinaInfo.nomi?.[lang] || vitrinaInfo.nomi?.uz || u.ttl) : u.ttl;
@@ -1506,6 +1586,20 @@ function handleQR(data) {
 
     go('screen3');
   }, 600);
+}
+
+/* ─────────────────────────────────────────────────────
+   VITRINA TRANSITION LOADER
+───────────────────────────────────────────────────── */
+const VT_LABELS = { uz:'Yuklanmoqda', en:'Loading', ru:'Загрузка' };
+
+function showVtLoader() {
+  el('vt-text').textContent = VT_LABELS[lang] || VT_LABELS.uz;
+  el('vt-loader').classList.add('show');
+}
+
+function hideVtLoader() {
+  el('vt-loader').classList.remove('show');
 }
 
 /* Show/hide FAB based on active screen */
