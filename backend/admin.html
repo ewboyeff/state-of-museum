@@ -460,22 +460,6 @@ select option { background:var(--surface2); color:var(--text); }
         <div class="field-group"><label>EN</label><input id="eks-name-en" placeholder="Stone Axe" /></div>
       </div>
 
-      <!-- Davr -->
-      <p class="section-title">Davr (katta harfda)</p>
-      <div class="form-row3">
-        <div class="field-group"><label>UZ</label><input id="eks-era-uz" placeholder="TOSH DAVRI" /></div>
-        <div class="field-group"><label>RU</label><input id="eks-era-ru" placeholder="КАМЕННЫЙ ВЕК" /></div>
-        <div class="field-group"><label>EN</label><input id="eks-era-en" placeholder="STONE AGE" /></div>
-      </div>
-
-      <!-- Sana -->
-      <p class="section-title">Sana / davr oralig'i</p>
-      <div class="form-row3">
-        <div class="field-group"><label>UZ</label><input id="eks-date-uz" placeholder="M.av. 8000–3000 yil" /></div>
-        <div class="field-group"><label>RU</label><input id="eks-date-ru" placeholder="8000–3000 до н.э." /></div>
-        <div class="field-group"><label>EN</label><input id="eks-date-en" placeholder="8000–3000 BC" /></div>
-      </div>
-
       <hr class="section-divider" />
       <!-- Matn -->
       <p class="section-title">Matn (audio uchun o'qiladi)</p>
@@ -905,7 +889,7 @@ async function openEksponatModal() {
   g('eks-id').value=''; g('eks-modal-title').textContent="Eksponat qo'shish"; g('eks-save-txt').textContent='Saqlash';
   setImagePreview('');
   g('eks-tartib').value='0';
-  ['name-uz','name-ru','name-en','era-uz','era-ru','era-en','date-uz','date-ru','date-en','text-uz','text-ru','text-en'].forEach(k=>g('eks-'+k).value='');
+  ['name-uz','name-ru','name-en','text-uz','text-ru','text-en'].forEach(k=>g('eks-'+k).value='');
   await populateEksBolimSelect('','');
   openModal('eks-modal');
 }
@@ -916,8 +900,6 @@ async function editEksponat(id) {
   setImagePreview(e.image_url||'');
   g('eks-tartib').value=e.tartib??0;
   g('eks-name-uz').value=e.name?.uz||''; g('eks-name-ru').value=e.name?.ru||''; g('eks-name-en').value=e.name?.en||'';
-  g('eks-era-uz').value =e.era?.uz||'';  g('eks-era-ru').value =e.era?.ru||'';  g('eks-era-en').value =e.era?.en||'';
-  g('eks-date-uz').value=e.date?.uz||''; g('eks-date-ru').value=e.date?.ru||''; g('eks-date-en').value=e.date?.en||'';
   g('eks-text-uz').value=e.text?.uz||''; g('eks-text-ru').value=e.text?.ru||''; g('eks-text-en').value=e.text?.en||'';
   await populateEksBolimSelect(e.bolim_id, e.vitrina_id);
   openModal('eks-modal');
@@ -964,9 +946,9 @@ async function saveEksponat() {
     const body={
       vitrina_id:parseInt(vitrinaId), bolim_id:parseInt(bolimId),
       image_url: imageUrl,
-      era: {uz:gv('eks-era-uz'),  ru:gv('eks-era-ru'),  en:gv('eks-era-en')},
+      era: {uz:'', ru:'', en:''},
       name:{uz:nameUz,            ru:gv('eks-name-ru'), en:gv('eks-name-en')},
-      date:{uz:gv('eks-date-uz'), ru:gv('eks-date-ru'), en:gv('eks-date-en')},
+      date:{uz:'', ru:'', en:''},
       text:{uz:textUz,            ru:gv('eks-text-ru'), en:gv('eks-text-en')},
       tartib:parseInt(gv('eks-tartib'))||0,
     };
