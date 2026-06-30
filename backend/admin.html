@@ -275,8 +275,15 @@ select option { background:var(--surface2); color:var(--text); }
 
       <!-- VITRINALAR -->
       <div class="page" id="page-vitrinalar">
+        <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+          <select id="vit-filter-bolim" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:var(--radius);outline:none;font-family:inherit" onchange="applyVitFilter()">
+            <option value="">Barcha bo'limlar</option>
+          </select>
+          <span style="flex:1"></span>
+          <button class="btn btn-primary btn-sm" onclick="openVitrinaModal()">+ Qo'shish</button>
+        </div>
         <div class="table-card">
-          <div class="table-header"><div><h3>Vitrinalar</h3><div class="table-meta" id="vitrinalar-count-text">Yuklanmoqda...</div></div><button class="btn btn-primary btn-sm" onclick="openVitrinaModal()">+ Qo'shish</button></div>
+          <div class="table-header"><div><h3>Vitrinalar</h3><div class="table-meta" id="vitrinalar-count-text">Yuklanmoqda...</div></div></div>
           <div class="table-wrap">
             <table><thead><tr><th>ID</th><th>Bo'lim</th><th>Nomi</th><th>Joy</th><th>QR havola</th><th>Amallar</th></tr></thead>
             <tbody id="vitrinalar-body"></tbody></table>
@@ -406,9 +413,9 @@ select option { background:var(--surface2); color:var(--text); }
     <div class="modal-head"><h3 id="vitrina-modal-title">Vitrina qo'shish</h3><button class="modal-close" onclick="closeModal('vitrina-modal')">✕</button></div>
     <input type="hidden" id="vitrina-id" />
     <div class="modal-body">
-      <div class="field-group"><label>Bo'lim *</label><select id="vitrina-bolim"><option value="">— Bo'limni tanlang —</option></select></div>
+      <div class="field-group"><label>Bo'lim</label><select id="vitrina-bolim"><option value="">Bo'limni tanlang</option></select></div>
       <div class="form-row">
-        <div class="field-group"><label>Nomi (UZ) *</label><input id="vitrina-nomi-uz" placeholder="1-vitrina" /></div>
+        <div class="field-group"><label>Nomi (UZ)</label><input id="vitrina-nomi-uz" placeholder="1-vitrina" /></div>
         <div class="field-group"><label>Nomi (RU)</label><input id="vitrina-nomi-ru" placeholder="Витрина 1" /></div>
       </div>
       <div class="field-group"><label>Nomi (EN)</label><input id="vitrina-nomi-en" placeholder="Showcase 1" /></div>
@@ -446,8 +453,8 @@ select option { background:var(--surface2); color:var(--text); }
       <!-- Bolim & Vitrina -->
       <p class="section-title">Joylashuvi</p>
       <div class="form-row">
-        <div class="field-group"><label>Bo'lim *</label><select id="eks-bolim" onchange="loadVitrinaForEks()"><option value="">— tanlang —</option></select></div>
-        <div class="field-group"><label>Vitrina *</label><select id="eks-vitrina"><option value="">— avval bo'lim tanlang —</option></select></div>
+        <div class="field-group"><label>Bo'lim</label><select id="eks-bolim" onchange="loadVitrinaForEks()"><option value="">Bo'limni tanlang</option></select></div>
+        <div class="field-group"><label>Vitrina</label><select id="eks-vitrina"><option value="">Vitrinani tanlang</option></select></div>
       </div>
       <div class="field-group" style="max-width:120px"><label>Tartib</label><input type="number" id="eks-tartib" value="0" min="0" /></div>
 
@@ -455,7 +462,7 @@ select option { background:var(--surface2); color:var(--text); }
       <!-- Nomi -->
       <p class="section-title">Eksponat nomi</p>
       <div class="form-row3">
-        <div class="field-group"><label>UZ *</label><input id="eks-name-uz" placeholder="Tosh bolta" /></div>
+        <div class="field-group"><label>UZ</label><input id="eks-name-uz" placeholder="Tosh bolta" /></div>
         <div class="field-group"><label>RU</label><input id="eks-name-ru" placeholder="Каменный топор" /></div>
         <div class="field-group"><label>EN</label><input id="eks-name-en" placeholder="Stone Axe" /></div>
       </div>
@@ -463,7 +470,7 @@ select option { background:var(--surface2); color:var(--text); }
       <hr class="section-divider" />
       <!-- Matn -->
       <p class="section-title">Matn (audio uchun o'qiladi)</p>
-      <div class="field-group"><label>O'zbek tili *</label><textarea id="eks-text-uz" style="min-height:130px" placeholder="Bu eksponat haqida batafsil ma'lumot... Tashrif buyuruvchiga audio orqali aytiladi."></textarea></div>
+      <div class="field-group"><label>O'zbek tili</label><textarea id="eks-text-uz" style="min-height:130px" placeholder="Bu eksponat haqida batafsil ma'lumot... Tashrif buyuruvchiga audio orqali aytiladi."></textarea></div>
       <div class="field-group"><label>Русский язык</label><textarea id="eks-text-ru" style="min-height:130px" placeholder="Подробная информация об экспонате..."></textarea></div>
       <div class="field-group"><label>English</label><textarea id="eks-text-en" style="min-height:130px" placeholder="Detailed information about the exhibit..."></textarea></div>
     </div>
@@ -684,31 +691,43 @@ async function loadVitrinalar() {
     const [rv,rb] = await Promise.all([fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}),fetch(`${API}/api/admin/bolimlar`,{headers:authH()})]);
     if (rv.status===401) { doLogout(); return; }
     vitrinalarData=await rv.json(); bolimlarData=await rb.json();
-    g('vitrinalar-count-text').textContent=`Jami: ${vitrinalarData.length} ta vitrina`;
-    if (!vitrinalarData.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">🪟</div><h3>Vitrinalar yo'q</h3><p>Yangi vitrina qo'shing</p></div></td></tr>`; return; }
-    const bMap={}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
-    tbody.innerHTML = vitrinalarData.map(v=>{
-      const qrUrl=`${frontendUrl || location.origin}/?vitrina=${v.id}`;
-      return `<tr>
-        <td><span class="badge badge-gray">#${v.id}</span></td>
-        <td><span class="badge badge-blue">${esc(bMap[v.bolim_id]||'—')}</span></td>
-        <td><strong>${esc(v.nomi?.uz||'—')}</strong></td>
-        <td style="font-size:0.82rem;color:var(--muted)">${esc(v.joy||'—')}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><a class="qr-link" href="${esc(qrUrl)}" target="_blank">?vitrina=${v.id}</a><button class="btn btn-secondary btn-sm" onclick="copyQR('${esc(qrUrl)}')">📋</button></div></td>
-        <td><div class="actions">
-          <button class="btn btn-sm btn-edit" onclick="editVitrina(${v.id})">✏️</button>
-          <button class="btn btn-sm btn-edit" onclick="showQR(${v.id},'${esc(v.nomi?.uz||'')}')">🔲 QR</button>
-          <button class="btn btn-sm btn-del"  onclick="confirmDelete('vitrina',${v.id})">🗑️</button>
-        </div></td>
-      </tr>`;
-    }).join('');
-  } catch(e) { tbody.innerHTML=`<tr><td colspan="6" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+    // bo'lim filter ni to'ldirish
+    const bSel=g('vit-filter-bolim'), bPrev=bSel.value;
+    bSel.innerHTML="<option value=''>Barcha bo'limlar</option>";
+    bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.nomi?.uz||"Bo'lim";if(String(b.id)===bPrev)o.selected=true;bSel.appendChild(o);});
+    applyVitFilter();
+  } catch(e) { g('vitrinalar-body').innerHTML=`<tr><td colspan="6" style="color:#fca5a5;padding:20px">Xato: ${esc(e.message)}</td></tr>`; }
+}
+
+function applyVitFilter() {
+  const filterBolim=gv('vit-filter-bolim');
+  const tbody=g('vitrinalar-body');
+  const bMap={}; bolimlarData.forEach(b=>bMap[b.id]=b.nomi?.uz||`#${b.id}`);
+  let list=vitrinalarData;
+  if (filterBolim) list=list.filter(v=>String(v.bolim_id)===filterBolim);
+  g('vitrinalar-count-text').textContent=`Jami: ${list.length} ta vitrina`;
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">🪟</div><h3>Vitrinalar yo'q</h3><p>Yangi vitrina qo'shing</p></div></td></tr>`; return; }
+  tbody.innerHTML = list.map(v=>{
+    const qrUrl=`${frontendUrl || location.origin}/?vitrina=${v.id}`;
+    return `<tr>
+      <td><span class="badge badge-gray">#${v.id}</span></td>
+      <td><span class="badge badge-blue">${esc(bMap[v.bolim_id]||'—')}</span></td>
+      <td><strong>${esc(v.nomi?.uz||'—')}</strong></td>
+      <td style="font-size:0.82rem;color:var(--muted)">${esc(v.joy||'—')}</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><a class="qr-link" href="${esc(qrUrl)}" target="_blank">?vitrina=${v.id}</a><button class="btn btn-secondary btn-sm" onclick="copyQR('${esc(qrUrl)}')">📋</button></div></td>
+      <td><div class="actions">
+        <button class="btn btn-sm btn-edit" onclick="editVitrina(${v.id})">✏️</button>
+        <button class="btn btn-sm btn-edit" onclick="showQR(${v.id},'${esc(v.nomi?.uz||'')}')">🔲 QR</button>
+        <button class="btn btn-sm btn-del"  onclick="confirmDelete('vitrina',${v.id})">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
 }
 function copyQR(url) { navigator.clipboard.writeText(url).then(()=>toast('Nusxalandi','success')).catch(()=>{}); }
 async function _fillVitrinaModal(selBolimId='') {
-  const sel=g('vitrina-bolim'); sel.innerHTML="<option value=''>— Bo'limni tanlang —</option>";
+  const sel=g('vitrina-bolim'); sel.innerHTML="<option value=''>Bo'limni tanlang</option>";
   if (!bolimlarData.length) { const r=await fetch(`${API}/api/admin/bolimlar`,{headers:authH()}); bolimlarData=await r.json(); }
-  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;if(String(b.id)===String(selBolimId))o.selected=true;sel.appendChild(o);});
+  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.nomi?.uz||"Bo'lim";if(String(b.id)===String(selBolimId))o.selected=true;sel.appendChild(o);});
 }
 async function openVitrinaModal() {
   g('vitrina-id').value='';
@@ -907,20 +926,20 @@ async function editEksponat(id) {
 
 async function populateEksBolimSelect(selBolim, selVitrina) {
   const bSel=g('eks-bolim');
-  bSel.innerHTML="<option value=''>— tanlang —</option>";
+  bSel.innerHTML="<option value=''>Bo'limni tanlang</option>";
   if (!bolimlarData.length) { const r=await fetch(`${API}/api/admin/bolimlar`,{headers:authH()}); bolimlarData=await r.json(); }
-  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=`${b.nomi?.uz||"Bo'lim"} (#${b.id})`;if(String(b.id)===String(selBolim))o.selected=true;bSel.appendChild(o);});
+  bolimlarData.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.nomi?.uz||"Bo'lim";if(String(b.id)===String(selBolim))o.selected=true;bSel.appendChild(o);});
   await loadVitrinaForEks(selVitrina);
 }
 
 async function loadVitrinaForEks(selVitrina='') {
   const bolimId=gv('eks-bolim');
   const vSel=g('eks-vitrina');
-  vSel.innerHTML="<option value=''>— tanlang —</option>";
+  vSel.innerHTML="<option value=''>Vitrinani tanlang</option>";
   if (!bolimId) return;
   if (!vitrinalarData.length) { const r=await fetch(`${API}/api/admin/vitrinalar`,{headers:authH()}); vitrinalarData=await r.json(); }
   vitrinalarData.filter(v=>String(v.bolim_id)===String(bolimId)).forEach(v=>{
-    const o=document.createElement('option');o.value=v.id;o.textContent=`${v.nomi?.uz||"Vitrina"} (#${v.id})`;if(String(v.id)===String(selVitrina))o.selected=true;vSel.appendChild(o);
+    const o=document.createElement('option');o.value=v.id;o.textContent=v.nomi?.uz||"Vitrina";if(String(v.id)===String(selVitrina))o.selected=true;vSel.appendChild(o);
   });
 }
 
